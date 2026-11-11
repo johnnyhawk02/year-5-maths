@@ -646,3 +646,32 @@ button { font: inherit; color: inherit; }
 .verdict.small { width: 24px; height: 24px; font-size: 0.8rem; }
 .home-alpaca { width: 64px; height: 80px; flex: none; }
 .row.hello { align-items: center; gap: 12px; } .home-alpaca { overflow: hidden; }
+
+/* Phones held upright: Check and Next stay within reach at the bottom of the screen. */
+@media (max-width: 560px) {
+  .session { gap: 14px; }
+  .q-layout { gap: 16px; }
+  .a-side .actions {
+    position: sticky; bottom: 0; z-index: 21; margin: 0 -16px calc(-32px - env(safe-area-inset-bottom));
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--page); border-top: 1px solid var(--line);
+  }
+  .feedback { scroll-margin: 70px 0 90px; }
+  .at-bottom-left .alpaca-body, .at-bottom-right .alpaca-body { bottom: calc(var(--w) * -1.05 + 70px); }
+  .at-bottom-left .alpaca-bubble, .at-bottom-right .alpaca-bubble { bottom: calc(var(--w) * 0.45 + 70px); }
+}
+/* Upright phones: tighter keys and boxes so a whole question fits on a screen like the Pixel 9a. */
+@media (max-width: 560px) {
+  .main { padding-top: 10px; }
+  .session-top .crumb { min-height: 36px; }
+  .prompt { font-size: 1.2rem; }
+  .q-side, .a-side { gap: 10px; }
+  .pad-wrap { gap: 8px; }
+  .pad { gap: 6px; }
+  .key { min-height: 52px; font-size: 1.4rem; }
+  .choice { min-height: 60px; font-size: 1.25rem; }
+  .choices { gap: 8px; }
+  .column { padding: 10px 12px; font-size: 1.5rem; gap: 3px 6px; }
+  .column .col-cell { aspect-ratio: 1 / 0.9; min-height: 40px; }
+  .frac-entry { padding: 10px; }
+  .frac-box { height: 50px; font-size: 1.5rem; }
+}

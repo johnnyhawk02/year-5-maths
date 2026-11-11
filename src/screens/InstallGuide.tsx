@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { isAppleTouch } from '../platform';
-
-interface InstallEvent extends Event {
-  prompt: () => Promise<void>;
-}
+import { clearInstallEvent, getInstallEvent, isAndroid, isAppleTouch, onInstallEvent } from '../platform';
 
 const ShareIcon = () => (
   <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -20,19 +16,34 @@ const AddIcon = () => (
   </svg>
 );
 
+const MenuIcon = () => (
+  <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true">
+    <circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" />
+  </svg>
+);
+
 export function InstallGuide({ onSkip }: { onSkip: () => void }) {
   const apple = isAppleTouch();
-  const [prompt, setPrompt] = useState<InstallEvent | null>(null);
+  const android = isAndroid();
+  const [prompt, setPrompt] = useState(getInstallEvent);
+  const [installed, setInstalled] = useState(false);
 
-  // Browsers other than Safari can offer a one-tap install.
+  // Chrome on Android and on computers can offer a one-tap install.
   useEffect(() => {
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setPrompt(e as InstallEvent);
-    };
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
+    const off = onInstallEvent(() => setPrompt(getInstallEvent()));
+    const onInstalled = () => setInstalled(true);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => { off(); window.removeEventListener('appinstalled', onInstalled); };
   }, []);
+
+  const install = async () => {
+    if (!prompt) return;
+    await prompt.prompt();
+    const choice = await prompt.userChoice;
+    clearInstallEvent();
+    setPrompt(null);
+    if (choice.outcome === 'accepted') setInstalled(true);
+  };
 
   return (
     <div class="install">
@@ -40,7 +51,9 @@ export function InstallGuide({ onSkip }: { onSkip: () => void }) {
       <h1>Year 5 Maths</h1>
       <p class="lede">Put the app on your Home Screen. Then it opens full screen, works without the internet, and keeps your progress.</p>
 
-      {apple ? (
+      {installed ? (
+        <p class="card">Installed. Open <strong>Year 5 Maths</strong> from your Home Screen.</p>
+      ) : apple ? (
         <ol class="steps">
           <li>
             <span class="step-icon"><ShareIcon /></span>
@@ -56,9 +69,24 @@ export function InstallGuide({ onSkip }: { onSkip: () => void }) {
           </li>
         </ol>
       ) : prompt ? (
-        <button class="btn primary" onClick={() => void prompt.prompt()}>Install the app</button>
+        <button class="btn primary" onClick={() => void install()}>Install the app</button>
+      ) : android ? (
+        <ol class="steps">
+          <li>
+            <span class="step-icon"><MenuIcon /></span>
+            <span>Tap the <strong>three dots</strong> at the top of Chrome.</span>
+          </li>
+          <li>
+            <span class="step-icon"><AddIcon /></span>
+            <span>Choose <strong>Add to Home screen</strong>, then <strong>Install</strong>.</span>
+          </li>
+          <li>
+            <span class="step-icon num">3</span>
+            <span>Open Year 5 Maths from your Home Screen.</span>
+          </li>
+        </ol>
       ) : (
-        <p class="card">On an iPad, open this page in Safari to add it to the Home Screen. On a computer, use your browser's Install option if it has one.</p>
+        <p class="card">On an iPad, open this page in Safari to add it to the Home Screen. On an Android phone, open it in Chrome. On a computer, use your browser's Install option if it has one.</p>
       )}
 
       <button class="link" onClick={onSkip}>Use it in the browser for now</button>

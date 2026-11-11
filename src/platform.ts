@@ -20,3 +20,29 @@ export async function requestPersistence(): Promise<boolean> {
   }
   return false;
 }
+
+export function isAndroid(): boolean {
+  return /Android/.test(navigator.userAgent);
+}
+
+// Chrome on Android offers a one-tap install through this event. It can fire
+// before any screen is drawn, so it is caught here as soon as the app loads.
+export interface InstallEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+let installEvent: InstallEvent | null = null;
+const waiting = new Set<() => void>();
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installEvent = e as InstallEvent;
+    waiting.forEach((f) => f());
+  });
+}
+export const getInstallEvent = (): InstallEvent | null => installEvent;
+export const clearInstallEvent = (): void => { installEvent = null; };
+export function onInstallEvent(f: () => void): () => void {
+  waiting.add(f);
+  return () => { waiting.delete(f); };
+}
