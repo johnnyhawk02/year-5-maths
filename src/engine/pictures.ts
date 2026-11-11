@@ -69,7 +69,40 @@ export interface CubesPicture extends Common {
   high: number;
 }
 
-export type Picture = ChartPicture | LinePicture | ModelPicture | ArrayPicture | GridPicture | ShapePicture | CubesPicture;
+export interface AnglePicture extends Common {
+  kind: 'angle';
+  /** Directions of the arms from the corner, in degrees anticlockwise from "pointing right". */
+  rays: number[];
+  /** Arcs drawn between two directions, anticlockwise from `from` to `to`, with optional text. */
+  arcs: { from: number; to: number; text?: string; square?: boolean }[];
+  /** Draw a protractor with its centre on the corner and zero pointing right. */
+  protractor?: boolean;
+}
+
+export interface DrawingPicture extends Common {
+  kind: 'drawing';
+  /** Size of the drawing in its own units. */
+  w: number;
+  h: number;
+  /** Filled outlines. */
+  polys?: [number, number][][];
+  /** Lines as x1, y1, x2, y2, with true for a dashed (hidden) line. */
+  lines?: [number, number, number, number, boolean?][];
+  /** Ovals as centre x, centre y, radius x, radius y, with true for dashed. */
+  ovals?: [number, number, number, number, boolean?][];
+  labels?: { x: number; y: number; text: string }[];
+}
+
+export interface CoordsPicture extends Common {
+  kind: 'coords';
+  /** The grid runs from 0 to this number on both axes. */
+  size: number;
+  shapes: { points: [number, number][]; name?: string; hi?: boolean }[];
+  /** A dashed mirror line: x = at (vertical) or y = at (horizontal). */
+  mirror?: { vertical: boolean; at: number };
+}
+
+export type Picture = ChartPicture | LinePicture | ModelPicture | ArrayPicture | GridPicture | ShapePicture | CubesPicture | AnglePicture | DrawingPicture | CoordsPicture;
 
 const WHOLE = ['O', 'T', 'H', 'Th', 'TTh', 'HTh', 'M'];
 const PART = ['t', 'h', 'th'];
@@ -186,3 +219,37 @@ export function lShape(w: number, h: number, cw: number, ch: number, texts: stri
 export const cubes = (wide: number, deep: number, high: number, caption?: string): CubesPicture => ({
   kind: 'cubes', alt: `A block of cubes ${wide} wide, ${deep} deep and ${high} high`, caption, wide, deep, high,
 });
+
+/** An angle between two arms, with an arc. `text` labels the arc, such as "40°" or "?". */
+export function angle(from: number, to: number, text?: string, opts: { protractor?: boolean; caption?: string } = {}): AnglePicture {
+  const size = (((to - from) % 360) + 360) % 360;
+  return {
+    kind: 'angle', alt: opts.protractor ? 'An angle with a protractor placed on it' : `An angle of about ${size} degrees`, caption: opts.caption,
+    rays: [from, to], arcs: [{ from, to, text, square: size === 90 }], protractor: opts.protractor,
+  };
+}
+
+/** Several angles round one corner. `turns` are the sizes in order, starting from `start` and going anticlockwise. */
+export function anglesAround(start: number, turns: number[], texts: (string | undefined)[], caption?: string): AnglePicture {
+  const rays = [start];
+  for (const t of turns) rays.push(rays[rays.length - 1] + t);
+  return {
+    kind: 'angle', alt: `${turns.length} angles meeting at a point`, caption,
+    rays: [...new Set(rays.map((d) => ((d % 360) + 360) % 360))],
+    arcs: turns.map((t, i) => ({ from: rays[i], to: rays[i] + t, text: texts[i], square: t === 90 })),
+  };
+}
+
+/** A polygon with n corners on a circle. Uneven `radii` make it irregular. */
+export function polygon(n: number, radii?: number[], caption?: string): DrawingPicture {
+  const pts: [number, number][] = Array.from({ length: n }, (_, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / n + (n % 2 ? 0 : Math.PI / n);
+    const r = 1.5 * (radii?.[i] ?? 1);
+    return [Math.round((1.6 + r * Math.cos(a)) * 100) / 100, Math.round((1.6 + r * Math.sin(a)) * 100) / 100];
+  });
+  return { kind: 'drawing', alt: `A shape with ${n} straight sides`, caption, w: 3.2, h: 3.2, polys: [pts] };
+}
+
+export function coords(size: number, shapes: CoordsPicture['shapes'], opts: { mirror?: CoordsPicture['mirror']; caption?: string } = {}): CoordsPicture {
+  return { kind: 'coords', alt: `A coordinate grid from 0 to ${size}`, caption: opts.caption, size, shapes, mirror: opts.mirror };
+}

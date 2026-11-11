@@ -550,3 +550,26 @@ button { font: inherit; color: inherit; }
 
 .pc-digit, .pc-head { white-space: nowrap; min-width: 2.2em; }
 .q-side .pl-label, .q-side .pl-point text, .q-side .pl-jump text { font-size: 22px; }
+
+.pic-angle, .pic-drawing, .pic-coords { max-width: 100%; height: auto; }
+.pa-ray { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
+.pa-dot { fill: var(--ink); }
+.pa-arc path { fill: none; stroke: var(--spot2); stroke-width: 2.5; }
+.pa-arc text { font-size: 19px; font-weight: 700; fill: var(--spot2); text-anchor: middle; }
+.pa-pro path { fill: color-mix(in srgb, var(--panel) 70%, transparent); stroke: var(--ink); stroke-width: 1.5; }
+.pa-pro line { stroke: var(--ink); stroke-width: 1; }
+.pa-pro text { font-size: 12px; font-weight: 600; text-anchor: middle; fill: var(--ink); }
+.ps-edge-on { stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; }
+.pd-line { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; fill: none; }
+.pd-oval { fill: color-mix(in srgb, var(--spot2) 22%, var(--page)); }
+.pd-dash { stroke-width: 1.5; stroke-dasharray: 5 5; }
+.pg-grid line { stroke: var(--line); stroke-width: 1; }
+.pg-grid .pg-axis { stroke: var(--ink); stroke-width: 2.5; }
+.pg-grid text { font-size: 13px; fill: var(--ink); }
+.pg-mirror { stroke: var(--spot1); stroke-width: 3; stroke-dasharray: 8 6; }
+.pg-shape path { fill: color-mix(in srgb, var(--ink) 18%, transparent); stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; }
+.pg-shape circle { fill: var(--ink); }
+.pg-shape text { font-size: 16px; font-weight: 700; fill: var(--ink); }
+.pg-shape.hi path { fill: color-mix(in srgb, var(--spot2) 35%, transparent); stroke: var(--spot2); }
+.pg-shape.hi circle, .pg-shape.hi text { fill: var(--spot2); }
+.q-side .pa-pro text { font-size: 14px; }

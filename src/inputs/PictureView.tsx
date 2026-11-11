@@ -1,4 +1,4 @@
-import type { CubesPicture, LinePicture, Picture, ShapePicture } from '../engine/pictures';
+import type { AnglePicture, CoordsPicture, CubesPicture, DrawingPicture, LinePicture, Picture, ShapePicture } from '../engine/pictures';
 
 const W = 600, PAD = 34;
 
@@ -102,12 +102,104 @@ function Cubes({ p }: { p: CubesPicture }) {
   );
 }
 
+function Angle({ p }: { p: AnglePicture }) {
+  // On a protractor the arms stop at the tick marks so the numbers outside stay clear.
+  const PR = 150, R = p.protractor ? PR - 14 : 120;
+  const norm = (d: number) => ((d % 360) + 360) % 360;
+  // Only the top half is needed when nothing points downwards.
+  const upper = p.rays.every((d) => norm(d) <= 180) && p.arcs.every((a) => norm(a.to - a.from) <= 180 && norm(a.from) <= 180 && norm(a.from) + norm(a.to - a.from) <= 180);
+  const cx = 200, cy = p.protractor ? 185 : 140, height = p.protractor ? 210 : upper ? 170 : 280;
+  const pt = (deg: number, r: number): [number, number] => [cx + r * Math.cos((deg * Math.PI) / 180), cy - r * Math.sin((deg * Math.PI) / 180)];
+  return (
+    <svg viewBox={`0 0 400 ${height}`} width={400} class="pic-angle" role="img" aria-label={p.alt}>
+      {p.protractor && (
+        <g class="pa-pro">
+          <path d={`M ${cx - PR} ${cy} A ${PR} ${PR} 0 0 1 ${cx + PR} ${cy} Z`} />
+          {Array.from({ length: 37 }, (_, i) => {
+            const d = i * 5, long = d % 10 === 0;
+            const [x1, y1] = pt(d, PR), [x2, y2] = pt(d, PR - (long ? 12 : 6));
+            return <line key={d} x1={x1} y1={y1} x2={x2} y2={y2} />;
+          })}
+          {Array.from({ length: 19 }, (_, i) => {
+            const d = i * 10, [x, y] = pt(d, PR + 15);
+            return <text key={d} x={x} y={y + 4}>{d}</text>;
+          })}
+        </g>
+      )}
+      {p.arcs.map((a, i) => {
+        const size = norm(a.to - a.from) || 360;
+        const r = p.protractor ? 44 : 34 + (i % 2) * 10;
+        const [x1, y1] = pt(a.from, r), [x2, y2] = pt(a.from + size, r);
+        const [tx, ty] = pt(a.from + size / 2, r + (size < 40 ? 34 : 24));
+        const [sx1, sy1] = pt(a.from, 22), [sx2, sy2] = pt(a.from + 45, 22 * Math.SQRT2), [sx3, sy3] = pt(a.from + 90, 22);
+        return (
+          <g key={i} class="pa-arc">
+            {a.square ? <path d={`M ${sx1} ${sy1} L ${sx2} ${sy2} L ${sx3} ${sy3}`} /> : <path d={`M ${x1} ${y1} A ${r} ${r} 0 ${size > 180 ? 1 : 0} 0 ${x2} ${y2}`} />}
+            {a.text && <text x={tx} y={ty + 6}>{a.text}</text>}
+          </g>
+        );
+      })}
+      {p.rays.map((d, i) => { const [x, y] = pt(d, R); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} class="pa-ray" />; })}
+      <circle cx={cx} cy={cy} r={4} class="pa-dot" />
+    </svg>
+  );
+}
+
+function Drawing({ p }: { p: DrawingPicture }) {
+  const u = Math.min(60, 280 / p.w, 220 / p.h), pad = 8;
+  const X = (x: number) => pad + x * u, Y = (y: number) => pad + y * u;
+  const width = p.w * u + pad * 2, height = p.h * u + pad * 2;
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width={width} class="pic-drawing" role="img" aria-label={p.alt}>
+      {p.polys?.map((poly, i) => <path key={`p${i}`} d={poly.map(([x, y], k) => `${k ? 'L' : 'M'} ${X(x)} ${Y(y)}`).join(' ') + ' Z'} class={p.lines || p.ovals ? 'ps-fill' : 'ps-fill ps-edge-on'} />)}
+      {p.ovals?.map(([cx, cy, rx, ry, dashed], i) => <ellipse key={`o${i}`} cx={X(cx)} cy={Y(cy)} rx={rx * u} ry={ry * u} class={dashed ? 'pd-line pd-dash' : 'pd-line pd-oval'} />)}
+      {p.lines?.map(([a, b, c, d, dashed], i) => <line key={`l${i}`} x1={X(a)} y1={Y(b)} x2={X(c)} y2={Y(d)} class={dashed ? 'pd-line pd-dash' : 'pd-line'} />)}
+      {p.labels?.map((l, i) => <text key={`t${i}`} x={X(l.x)} y={Y(l.y) + 6} text-anchor="middle" class="ps-label">{l.text}</text>)}
+    </svg>
+  );
+}
+
+function Coords({ p }: { p: CoordsPicture }) {
+  const u = Math.min(34, 300 / p.size), left = 34, top = 14;
+  const X = (x: number) => left + x * u, Y = (y: number) => top + (p.size - y) * u;
+  const side = p.size * u;
+  return (
+    <svg viewBox={`0 0 ${side + left + 16} ${side + top + 34}`} width={side + left + 16} class="pic-coords" role="img" aria-label={p.alt}>
+      {Array.from({ length: p.size + 1 }, (_, i) => (
+        <g key={i} class="pg-grid">
+          <line x1={X(i)} y1={Y(0)} x2={X(i)} y2={Y(p.size)} class={i === 0 ? 'pg-axis' : ''} />
+          <line x1={X(0)} y1={Y(i)} x2={X(p.size)} y2={Y(i)} class={i === 0 ? 'pg-axis' : ''} />
+          <text x={X(i)} y={Y(0) + 20} text-anchor="middle">{i}</text>
+          {i > 0 && <text x={X(0) - 8} y={Y(i) + 5} text-anchor="end">{i}</text>}
+        </g>
+      ))}
+      {p.mirror && (p.mirror.vertical
+        ? <line x1={X(p.mirror.at)} y1={Y(0)} x2={X(p.mirror.at)} y2={Y(p.size)} class="pg-mirror" />
+        : <line x1={X(0)} y1={Y(p.mirror.at)} x2={X(p.size)} y2={Y(p.mirror.at)} class="pg-mirror" />)}
+      {p.shapes.map((s, i) => {
+        const cx = s.points.reduce((a, q) => a + q[0], 0) / s.points.length, cy = s.points.reduce((a, q) => a + q[1], 0) / s.points.length;
+        return (
+          <g key={i} class={`pg-shape ${s.hi ? 'hi' : ''}`}>
+            {s.points.length > 1
+              ? <path d={s.points.map(([x, y], k) => `${k ? 'L' : 'M'} ${X(x)} ${Y(y)}`).join(' ') + ' Z'} />
+              : <circle cx={X(cx)} cy={Y(cy)} r={6} />}
+            {s.name && <text x={X(cx) + (s.points.length > 1 ? 0 : 12)} y={Y(cy) + (s.points.length > 1 ? 6 : -8)} text-anchor={s.points.length > 1 ? 'middle' : 'start'}>{s.name}</text>}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 /** Draws one teaching picture. */
 export function PictureView({ picture: p }: { picture: Picture }) {
   let body;
   if (p.kind === 'line') body = <Line p={p} />;
   else if (p.kind === 'shape') body = <Shape p={p} />;
   else if (p.kind === 'cubes') body = <Cubes p={p} />;
+  else if (p.kind === 'angle') body = <Angle p={p} />;
+  else if (p.kind === 'drawing') body = <Drawing p={p} />;
+  else if (p.kind === 'coords') body = <Coords p={p} />;
   else if (p.kind === 'chart') {
     const cols = p.headers.map((_, i) => (i === p.point ? '0.7em max-content' : 'max-content')).join(' ');
     const cells = (row: string[], cls: string) =>

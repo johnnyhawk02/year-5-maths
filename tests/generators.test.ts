@@ -7,6 +7,8 @@ import { additionWorking, subtractionWorking } from '../src/skills/add-subtract'
 import { divisionWorking, factorsOf, isPrime, shortMultiplicationWorking } from '../src/skills/multiply-divide';
 import { ALL_CONTENT } from '../src/skills';
 import { METRIC, TIME_UNITS, clockText } from '../src/skills/measurement';
+import { ANGLE_TYPES, POLYGON_NAMES, moveText } from '../src/skills/geometry';
+import { SOLIDS } from '../src/engine/solids';
 import { additionPicture, additionSteps, divisionPicture, divisionSteps, longMultiplicationPicture, shortMultiplicationPicture, shortMultiplicationSteps, subtractionPicture, subtractionSteps, type WRow, type Written } from '../src/engine/written';
 import { MIXED, ROUND_SIZE, TABLES, clock, isTableKey, makeRound } from '../src/tables';
 
@@ -940,6 +942,9 @@ describe('worked examples are shown, not just told', () => {
       }
       if (p.kind === 'model') p.rows.forEach((r) => r.forEach((part) => expect(part.size).toBeGreaterThan(0)));
       if (p.kind === 'array') expect(p.rows * p.cols * (p.copies ?? 1)).toBeLessThanOrEqual(100);
+      if (p.kind === 'angle') { expect(p.rays.length).toBeGreaterThanOrEqual(2); expect(p.arcs.length).toBeGreaterThanOrEqual(1); }
+      if (p.kind === 'drawing') expect((p.polys?.length ?? 0) + (p.lines?.length ?? 0) + (p.ovals?.length ?? 0)).toBeGreaterThan(0);
+      if (p.kind === 'coords') for (const sh of p.shapes) for (const pt of sh.points) pt.forEach((n) => { expect(n).toBeGreaterThanOrEqual(0); expect(n).toBeLessThanOrEqual(p.size); });
       if (p.kind === 'grid') { expect(p.shaded).toBeGreaterThanOrEqual(0); expect(p.shaded).toBeLessThanOrEqual(100); }
     }
   });
@@ -1070,6 +1075,196 @@ describe('unit 6 answers are right', () => {
       else close(n.answer, v[0] * 1000 - v[1] * v[2]);
       expect(n.answer).toBeGreaterThan(0);
       if (n.money) { expect(n.decimal).toBe(true); expect(n.explain.at(-1)).toContain(`£${n.answer.toFixed(2)}`); }
+    });
+  });
+});
+
+describe('unit 7 answers are right', () => {
+  const each = (id: string, fn: (q: Question) => void) => {
+    const c = ALL_CONTENT.find((x) => x.id === id)!;
+    for (const level of [1, 2, 3] as Level[]) for (let seed = 1; seed <= 3000; seed++) fn(c.generate(level, makeRng(seed)));
+  };
+  const numbers = (s: string) => [...s.matchAll(/\d+(?:\.\d+)?/g)].map((m) => Number(m[0]));
+  const asNumber = (q: Question) => { if (q.kind !== 'number') throw new Error('expected a number question'); return q; };
+  const asChoice = (q: Question) => { if (q.kind !== 'choice') throw new Error('expected a choice question'); return q; };
+  const pic = <K extends string>(q: Question, kind: K) => { const p = q.pics?.[0]; if (p?.kind !== kind) throw new Error(`expected a ${kind} picture`); return p as Extract<NonNullable<Question['pics']>[number], { kind: K }>; };
+  const turn = (a: { from: number; to: number }) => (((a.to - a.from) % 360) + 360) % 360 || 360;
+  const kind = (size: number) => (size < 90 ? 'Acute' : size === 90 ? 'Right angle' : size < 180 ? 'Obtuse' : size === 180 ? 'Straight line' : 'Reflex');
+  // Faces, edges and vertices, written out again here rather than read from the app.
+  const FACTS: Record<string, [number, number, number]> = {
+    cube: [6, 12, 8], cuboid: [6, 12, 8], 'square-based pyramid': [5, 8, 5], 'triangular prism': [5, 9, 6], 'triangular-based pyramid': [4, 6, 4],
+  };
+
+  it('3-D shapes', () => {
+    for (const s of SOLIDS.filter((x) => x.flat)) {
+      expect([s.faces, s.edges, s.vertices]).toEqual(FACTS[s.name]);
+      expect(s.vertices - s.edges + s.faces).toBe(2);
+      // A net has one piece for each face.
+      expect(s.net!.polys!.length).toBe(s.faces);
+    }
+    each('geometry-1', (q) => {
+      if (q.kind === 'number') {
+        const name = Object.keys(FACTS).find((n) => q.prompt.includes(`a ${n} have`) || q.prompt.includes(`an ${n} have`))!;
+        const i = ['faces', 'edges', 'vertices'].findIndex((w) => q.prompt.includes(w));
+        expect(q.answer).toBe(FACTS[name][i]);
+        if (q.pics) expect(pic(q, 'drawing').alt).toBe(`A drawing of a ${name}`);
+        return;
+      }
+      const c = asChoice(q);
+      expect(new Set(c.options).size).toBe(4);
+      const right = c.options[c.answer];
+      if (c.prompt.startsWith('Which shape has')) {
+        expect(numbers(c.prompt)).toEqual(FACTS[right]);
+        // No other option fits the same description.
+        expect(c.options.filter((o) => FACTS[o].join() === FACTS[right].join()).length).toBe(1);
+      } else if (c.prompt.includes('net')) expect(pic(q, 'drawing').alt).toBe(`The net of a ${right}, laid out flat`);
+      else expect(pic(q, 'drawing').alt).toBe(`A drawing of a ${right}`);
+    });
+  });
+
+  it('types of angle', () => {
+    expect(ANGLE_TYPES.length).toBe(5);
+    each('geometry-2', (q) => {
+      if (q.kind === 'number') {
+        const v = numbers(q.prompt);
+        if (q.prompt.includes('right angles make')) expect(q.answer * 90).toBe(v[0]);
+        else expect(q.answer).toBe({ quarter: 90, half: 180, 'three-quarter': 270, full: 360 }[q.prompt.match(/a ([\w-]+) turn/)![1]]);
+        return;
+      }
+      const c = asChoice(q);
+      if (c.prompt.startsWith('Which of these')) {
+        const want = c.prompt.includes('acute') ? 'Acute' : c.prompt.includes('obtuse') ? 'Obtuse' : 'Reflex';
+        expect(c.options.filter((o) => kind(parseInt(o, 10)) === want)).toEqual([c.options[c.answer]]);
+        return;
+      }
+      const p = pic(q, 'angle');
+      const size = turn(p.arcs[0]);
+      expect(c.options[c.answer]).toBe(kind(size));
+      if (c.prompt.includes('measures')) expect(numbers(c.prompt)[0]).toBe(size);
+      // Without a label the picture must not sit right on a border between two types.
+      else expect([90, 180].every((b) => size === 90 || Math.abs(size - b) >= 15)).toBe(true);
+    });
+  });
+
+  it('measuring angles', () => {
+    each('geometry-3', (q) => {
+      const n = asNumber(q);
+      const p = pic(q, 'angle');
+      if (p.protractor) {
+        expect(p.arcs[0].text).toBeUndefined();
+        expect(n.answer).toBe(turn(p.arcs[0]));
+        expect(Math.max(...p.rays)).toBeLessThanOrEqual(180);
+      } else {
+        const asked = p.arcs.find((a) => a.text === '?')!;
+        expect(n.answer).toBe(turn(asked));
+        expect(n.answer + parseInt(p.arcs.find((a) => a !== asked)!.text!, 10)).toBe(360);
+      }
+    });
+  });
+
+  it('angles at a point and on a line', () => {
+    each('geometry-4', (q) => {
+      const n = asNumber(q);
+      const p = pic(q, 'angle');
+      const total = p.arcs.reduce((a, arc) => a + turn(arc), 0);
+      expect(total).toBe(/straight line|equal/.test(n.prompt) ? 180 : 360);
+      for (const arc of p.arcs) {
+        if (arc.text === '?') expect(turn(arc)).toBe(n.answer);
+        else if (arc.text) expect(parseInt(arc.text, 10)).toBe(turn(arc));
+        else expect(arc.square && turn(arc) === 90).toBe(true);
+        expect(turn(arc)).toBeGreaterThanOrEqual(30);
+      }
+      expect(p.arcs.filter((a) => a.text === '?').length).toBe(n.prompt.includes('equal') ? 2 : 1);
+    });
+  });
+
+  it('rectangles', () => {
+    each('geometry-5', (q) => {
+      const n = asNumber(q);
+      const v = numbers(n.prompt);
+      if (n.prompt.includes('diagonal')) {
+        const given = pic(q, 'drawing').labels!.map((l) => l.text).filter((t) => t !== '?');
+        expect(given.length).toBe(1);
+        expect(n.answer + parseInt(given[0], 10)).toBe(90);
+      } else if (n.prompt.startsWith('A square')) expect(n.answer * 4).toBe(v[0]);
+      else {
+        const labels = pic(q, 'shape').labels.map((l) => l.text);
+        expect(labels.filter((t) => t === '?').length).toBe(1);
+        const sides = labels.filter((t) => t !== '?').map((t) => parseFloat(t));
+        if (n.prompt.includes('perimeter')) { expect(sides.length).toBe(1); expect(2 * (sides[0] + n.answer)).toBe(v[0]); expect(n.answer).toBeLessThan(sides[0]); }
+        else {
+          // The asked side is opposite the one with the same length: top matches bottom, right matches left.
+          const s = pic(q, 'shape');
+          const asked = s.labels.find((l) => l.text === '?')!;
+          expect(n.answer).toBe(asked.anchor === 'start' ? sides[1] : sides[0]);
+        }
+      }
+    });
+  });
+
+  it('polygons', () => {
+    const measure = (pts: [number, number][]) => {
+      const sides = pts.map((p, i) => { const b = pts[(i + 1) % pts.length]; return Math.hypot(p[0] - b[0], p[1] - b[1]); });
+      return { n: pts.length, even: Math.max(...sides) / Math.min(...sides) < 1.02, uneven: Math.max(...sides) / Math.min(...sides) > 1.3 };
+    };
+    each('geometry-6', (q) => {
+      const shape = measure(pic(q, 'drawing').polys![0]);
+      if (q.kind === 'number') {
+        const v = numbers(q.prompt);
+        const sides = q.prompt.startsWith('An equilateral') ? 3 : Number(Object.keys(POLYGON_NAMES).find((k) => q.prompt.includes(POLYGON_NAMES[Number(k)])));
+        expect(shape.n).toBe(sides);
+        expect(shape.even).toBe(true);
+        if (q.prompt.includes('What is its perimeter')) expect(q.answer).toBe(sides * v[0]);
+        else expect(q.answer * sides).toBe(v[0]);
+        return;
+      }
+      const c = asChoice(q);
+      if (c.prompt.includes('called')) { expect(c.options[c.answer]).toBe(POLYGON_NAMES[shape.n]); expect(new Set(c.options).size).toBe(4); expect(shape.even || shape.uneven).toBe(true); }
+      else {
+        expect(c.options).toEqual(['Regular', 'Irregular']);
+        expect(c.options[c.answer]).toBe(shape.even ? 'Regular' : 'Irregular');
+        expect(shape.even || shape.uneven).toBe(true);
+      }
+    });
+  });
+
+  it('reflection and translation', () => {
+    expect(moveText(3, -1)).toBe('3 squares right and 1 square down');
+    expect(moveText(-2, 4)).toBe('2 squares left and 4 squares up');
+    const move = (text: string) => {
+      const get = (plus: string, minus: string) => { const m = text.match(new RegExp(`(\\d+) squares? (${plus}|${minus})`)); return m ? Number(m[1]) * (m[2] === plus ? 1 : -1) : 0; };
+      return [get('right', 'left'), get('up', 'down')];
+    };
+    const mirrored = (p: [number, number], m: { vertical: boolean; at: number }): [number, number] => (m.vertical ? [2 * m.at - p[0], p[1]] : [p[0], 2 * m.at - p[1]]);
+    each('geometry-7', (q) => {
+      const p = pic(q, 'coords');
+      for (const s of p.shapes) for (const [x, y] of s.points) { expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThanOrEqual(p.size); expect(y).toBeGreaterThanOrEqual(0); expect(y).toBeLessThanOrEqual(p.size); }
+      if (q.kind === 'number') {
+        const v = numbers(q.prompt);
+        const from: [number, number] = [v[0], v[1]];
+        expect(p.shapes[0].points.some((c) => c[0] === from[0] && c[1] === from[1])).toBe(true);
+        const to = mirrored(from, p.mirror!);
+        expect(q.answer).toBe(p.mirror!.vertical ? to[0] : to[1]);
+        expect(v[2]).toBe(p.mirror!.vertical ? to[1] : to[0]);
+        // The whole reflected shape stays on the grid.
+        for (const c of p.shapes[0].points) for (const n of mirrored(c, p.mirror!)) { expect(n).toBeGreaterThanOrEqual(0); expect(n).toBeLessThanOrEqual(p.size); }
+        return;
+      }
+      const c = asChoice(q);
+      expect(new Set(c.options).size).toBe(4);
+      const right = c.options[c.answer];
+      if (c.prompt.startsWith('Shape A')) {
+        const [A, B] = p.shapes;
+        const [dx, dy] = move(right);
+        expect(B.points).toEqual(A.points.map(([x, y]) => [x + dx, y + dy]));
+        expect(dx !== 0 && dy !== 0).toBe(true);
+        return;
+      }
+      const start = p.shapes[0].points[0];
+      expect(c.prompt).toContain(`(${start[0]}, ${start[1]})`);
+      const end = c.prompt.includes('reflected') ? mirrored(start, p.mirror!) : [start[0] + move(c.prompt)[0], start[1] + move(c.prompt)[1]];
+      expect(right).toBe(`(${end[0]}, ${end[1]})`);
+      for (const o of c.options) for (const n of numbers(o)) expect(n).toBeLessThanOrEqual(p.size);
     });
   });
 });
