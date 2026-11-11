@@ -1,6 +1,6 @@
 // Unit 5: Decimals and percentages. All wording and questions are our own.
 // Decimals are held as whole numbers of thousandths so that no rounding errors creep in.
-import { hundredSquare, numberLine, placeChart } from '../engine/pictures';
+import { hundredSquare, numberLine, placeChart, type Picture } from '../engine/pictures';
 import { fr, gcd, mx } from '../engine/fractions';
 import type { Rng } from '../engine/rng';
 import type { Written } from '../engine/written';
@@ -8,6 +8,9 @@ import type { Frac, NumberQuestion, Question, SkillContent } from '../engine/typ
 
 const MINUS = '−';
 const X = '×';
+
+/** Adds pictures to a question. */
+const withPics = <Q extends Question>(pics: Picture[], q: Q): Q => ({ ...q, pics });
 
 /** Thousandths as decimal text: 350 -> "0.35". */
 export const dec = (t: number): string => (t / 1000).toFixed(3).replace(/\.?0+$/, '');
@@ -130,10 +133,10 @@ function digitValue(r: Rng): Question {
   if (w > 0) places.push([w, 'ones']);
   const [digit, place] = r.pick(places);
   const all = ['ones', 'tenths', 'hundredths', 'thousandths'];
-  return choiceOf(r, `What is the value of the digit ${digit} in ${dec(t)}?`, `${digit} ${place}`, all.filter((p) => p !== place).map((p) => `${digit} ${p}`), [
+  return withPics([placeChart([dec(t)])], choiceOf(r, `What is the value of the digit ${digit} in ${dec(t)}?`, `${digit} ${place}`, all.filter((p) => p !== place).map((p) => `${digit} ${p}`), [
     'After the decimal point the places are tenths, hundredths, then thousandths.',
     `The ${digit} is in the ${place} place, so it is worth ${digit} ${place}.`,
-  ]);
+  ]));
 }
 
 function partition(r: Rng): Question {
@@ -201,11 +204,11 @@ function roundToWhole(r: Rng): Question {
   const answer = roundH(h, 100) / 100;
   const tenths = Math.floor(h / 10) % 10;
   const low = Math.floor(h / 100);
-  return wholeQ(`Round ${dec(h * 10)} to the nearest whole number.`, undefined, answer, [
+  return withPics([numberLine(low, low + 1, 0.1, [low, low + 0.5, low + 1], { points: [h / 100] })], wholeQ(`Round ${dec(h * 10)} to the nearest whole number.`, undefined, answer, [
     `${dec(h * 10)} is between ${low} and ${low + 1}.`,
     `Look at the tenths digit. It is ${tenths}.`,
     tenths >= 5 ? `${tenths} is 5 or more, so round up to ${answer}.` : `${tenths} is less than 5, so round down to ${answer}.`,
-  ]);
+  ]));
 }
 
 function roundToTenth(r: Rng, crossing: boolean): Question {
@@ -215,11 +218,11 @@ function roundToTenth(r: Rng, crossing: boolean): Question {
   const answer = roundH(h, 10);
   const digit = h % 10;
   const low = Math.floor(h / 10) * 10;
-  return decQ(`Round ${dec(h * 10)} to one decimal place.`, undefined, answer * 10, [
+  return withPics([numberLine(low / 100, (low + 10) / 100, 0.01, [low / 100, (low + 5) / 100, (low + 10) / 100], { points: [h / 100] })], decQ(`Round ${dec(h * 10)} to one decimal place.`, undefined, answer * 10, [
     `${dec(h * 10)} is between ${(low / 100).toFixed(1)} and ${((low + 10) / 100).toFixed(1)}.`,
     `Look at the hundredths digit. It is ${digit}.`,
     digit >= 5 ? `${digit} is 5 or more, so round up to ${(answer / 100).toFixed(1)}.` : `${digit} is less than 5, so round down to ${(answer / 100).toFixed(1)}.`,
-  ]);
+  ]));
 }
 
 function whichRounds(r: Rng): Question {
@@ -280,11 +283,11 @@ function compareDecimals(r: Rng): Question {
   const [a, b] = closeDecimals(r, 2, 2);
   const larger = r.next() < 0.5;
   const right = larger ? Math.max(a, b) : Math.min(a, b);
-  return choiceOf(r, `Which number is ${larger ? 'larger' : 'smaller'}?`, dec(right), [dec(a + b - right)], [
+  return withPics([placeChart([(a / 1000).toFixed(2), (b / 1000).toFixed(2)])], choiceOf(r, `Which number is ${larger ? 'larger' : 'smaller'}?`, dec(right), [dec(a + b - right)], [
     `Write both with two decimal places: ${(a / 1000).toFixed(2)} and ${(b / 1000).toFixed(2)}.`,
     'Compare the digits from the left, one place at a time.',
     `${dec(right)} is ${larger ? 'larger' : 'smaller'}.`,
-  ]);
+  ]));
 }
 
 function decimalSign(r: Rng): Question {
@@ -445,34 +448,34 @@ const problems: SkillContent = {
 
 function hundredthsToPercent(r: Rng): Question {
   const n = r.int(1, 99);
-  return wholeQ(`Write ${fr(n, 100)} as a percentage.`, undefined, n, [
+  return withPics([hundredSquare(n)], wholeQ(`Write ${fr(n, 100)} as a percentage.`, undefined, n, [
     'Per cent means "out of 100".',
     `${n} out of 100 is ${n}%.`,
-  ], { unit: '%' });
+  ], { unit: '%' }));
 }
 
 function percentToHundredths(r: Rng): Question {
   const n = r.int(1, 99);
-  return fracQ(`Write ${n}% as a fraction.`, { whole: 0, num: n, den: 100 }, [
+  return withPics([hundredSquare(n)], fracQ(`Write ${n}% as a fraction.`, { whole: 0, num: n, den: 100 }, [
     'Per cent means "out of 100".',
     `${n}% = ${fr(n, 100)}.`,
-  ]);
+  ]));
 }
 
 function decimalToPercent(r: Rng): Question {
   const n = r.pick([r.int(1, 9), r.int(1, 9) * 10, r.int(11, 99)]);
-  return wholeQ(`Write ${dec(n * 10)} as a percentage.`, undefined, n, [
+  return withPics([hundredSquare(n)], wholeQ(`Write ${dec(n * 10)} as a percentage.`, undefined, n, [
     `${dec(n * 10)} is ${n} hundredths, which is ${fr(n, 100)}.`,
     `${n} out of 100 is ${n}%.`,
-  ], { unit: '%' });
+  ], { unit: '%' }));
 }
 
 function percentToDecimal(r: Rng): Question {
   const n = r.pick([r.int(1, 9), r.int(1, 9) * 10, r.int(11, 99)]);
-  return decQ(`Write ${n}% as a decimal.`, undefined, n * 10, [
+  return withPics([hundredSquare(n)], decQ(`Write ${n}% as a decimal.`, undefined, n * 10, [
     `${n}% = ${fr(n, 100)}, which is ${n} hundredths.`,
     `${n} hundredths is ${dec(n * 10)}.`,
-  ]);
+  ]));
 }
 
 function fractionToPercent(r: Rng): Question {

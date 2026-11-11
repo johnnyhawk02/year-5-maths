@@ -39,6 +39,7 @@ function digitValue(r: Rng, count: number): Question {
       `The ${ds[i]} is in the ${PLACES[place]} place.`,
       `${ds[i]} ${PLACES[place]} is ${fmt(ds[i] * pow10(place))}.`,
     ],
+    pics: [placeChart([fmt(n)])],
   };
 }
 
@@ -74,6 +75,7 @@ function compare(r: Rng, count: number): Question {
       `They first differ in the ${PLACES[place]} place: ${da[i]} and ${db[i]}.`,
       `So ${fmt(want)} is ${larger ? 'larger' : 'smaller'}.`,
     ],
+    pics: [placeChart([fmt(a), fmt(b)])],
   };
 }
 
@@ -280,6 +282,7 @@ function temperatureFall(r: Rng): Question {
       `Count back ${start} to reach 0.`,
       `There are ${fall - start} more to count back, so you land on ${fmt(start - fall)}.`,
     ],
+    pics: [numberLine(-10, 10, 1, [-10, -5, 0, 5, 10], { points: [start] })],
   };
 }
 
@@ -298,6 +301,7 @@ function countThroughZero(r: Rng): Question {
       `It takes ${toZero} to reach 0.`,
       `That leaves ${jump - toZero} more, so you land on ${fmt(answer)}.`,
     ],
+    pics: [numberLine(-10, 10, 1, [-10, -5, 0, 5, 10], { points: [start] })],
   };
 }
 
@@ -353,6 +357,7 @@ function difference(r: Rng): Question {
       `From 0 up to ${high} is ${high}.`,
       `${-low} + ${high} = ${high - low}.`,
     ],
+    pics: [numberLine(-15, 15, 1, [-15, -10, -5, 0, 5, 10, 15], { points: [low, high] })],
   };
 }
 
@@ -424,6 +429,7 @@ function roundNumber(r: Rng, digitCounts: number[], powers: number[]): Question 
         `Look at the ${PLACES[String(p).length - 2]} digit. It is ${decider}.`,
         `${decider >= 5 ? '5 or more rounds up' : '4 or less rounds down'}, so the answer is ${fmt(answer)}.`,
       ],
+      pics: [numberLine(lower, lower + p, p / 10, [lower, lower + p / 2, lower + p], { points: [n] })],
     };
   }
 }

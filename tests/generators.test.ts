@@ -571,7 +571,9 @@ describe('unit 4 answers are right', () => {
       if (q.kind === 'fraction') {
         close(answerValue(q), q.show ? value(q.show) : parse(fracs(q.prompt)[0]));
         if (q.prompt.includes('improper')) expect(q.answer.num).toBeGreaterThan(q.answer.den);
-        if (q.bars) close(q.bars[0].shaded / q.bars[0].parts, answerValue(q));
+        if (q.bars?.length === 1) close(q.bars[0].shaded / q.bars[0].parts, answerValue(q));
+        // Two bars show the two fractions being added or subtracted.
+        if (q.bars?.length === 2) { const [x, y] = q.bars.map((b) => b.shaded / b.parts); close(answerValue(q), q.show!.includes('+') ? x + y : x - y); }
       } else if (q.kind === 'choice') {
         const [a, b] = q.options.map(parse);
         expect(Math.abs(a - b)).toBeGreaterThan(1e-9);
@@ -591,7 +593,9 @@ describe('unit 4 answers are right', () => {
         }
         expect(answerValue(q)).toBeGreaterThan(0);
         expect(q.mixed).toBe(answerValue(q) > 1);
-        if (q.bars) close(q.bars[0].shaded / q.bars[0].parts, answerValue(q));
+        if (q.bars?.length === 1) close(q.bars[0].shaded / q.bars[0].parts, answerValue(q));
+        // Two bars show the two fractions being added or subtracted.
+        if (q.bars?.length === 2) { const [x, y] = q.bars.map((b) => b.shaded / b.parts); close(answerValue(q), q.show!.includes('+') ? x + y : x - y); }
         // Every "a = b" step in the working must hold.
         for (const line of q.explain) {
           for (const m of line.matchAll(/(\{[^}]+\}(?: [+−×] (?:\{[^}]+\}|\d+))?) = (\{[^}]+\})/g)) close(value(m[1]), value(m[2]));
@@ -1378,5 +1382,28 @@ describe('unit 8 answers are right', () => {
       else if (q.prompt.includes('altogether')) expect(q.answer).toBe(n.reduce((a, r) => a + r[colsNamed[0]], 0));
       else expect(q.answer).toBe(n[rowsNamed[0]][colsNamed[0]]);
     });
+  });
+});
+
+describe('pictures in questions', () => {
+  it('are well formed and fit their scales', () => {
+    const withPictures = new Set<string>();
+    for (const c of ALL_CONTENT) for (const level of [1, 2, 3] as Level[]) for (let seed = 1; seed <= 400; seed++) {
+      const q = c.generate(level, makeRng(seed));
+      if (q.bars?.length) withPictures.add(c.id.replace(/-\d+$/, ''));
+      for (const p of q.pics ?? []) {
+        withPictures.add(c.id.replace(/-\d+$/, ''));
+        expect(p.alt.length).toBeGreaterThan(0);
+        if (p.kind === 'line') {
+          expect((p.max - p.min) / p.step).toBeLessThanOrEqual(40.001);
+          for (const v of [...p.labels.map((l) => l.at), ...(p.points ?? []).map((x) => x.at)]) { expect(v).toBeGreaterThanOrEqual(p.min); expect(v).toBeLessThanOrEqual(p.max); }
+        }
+        if (p.kind === 'chart') p.rows.forEach((r) => expect(r.length).toBe(p.headers.length));
+        if (p.kind === 'array') expect(p.rows * p.cols * (p.copies ?? 1)).toBeLessThanOrEqual(100);
+        if (p.kind === 'grid') { expect(p.shaded).toBeGreaterThanOrEqual(0); expect(p.shaded).toBeLessThanOrEqual(100); }
+      }
+    }
+    // Every unit has pictures in at least some of its questions, apart from unit 2, whose questions are the written layouts themselves.
+    expect([...withPictures].sort()).toEqual(['decimals-percentages', 'fractions', 'geometry', 'measurement', 'multiply-divide', 'place-value', 'statistics']);
   });
 });
