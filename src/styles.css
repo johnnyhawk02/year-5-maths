@@ -404,3 +404,19 @@ button { font: inherit; color: inherit; }
 }
 .col-cell.active { border-color: var(--spot1); box-shadow: inset 0 0 0 2px var(--spot1); }
 .col-cell:disabled { opacity: 1; color: var(--ink); }
+.col-label { font-size: 0.75rem; font-weight: 500; color: var(--faint); text-align: right; line-height: 1.2; }
+.col-cell.work { border-style: dashed; }
+.division .divisor { text-align: right; padding-right: 0.25em; }
+.division .under { border-top: 3px solid var(--ink); }
+.division .under.first { border-left: 3px solid var(--ink); border-top-left-radius: 0; }
+.division { gap: 6px 0; }
+.division .col-cell { margin: 0 3px; }
+.rem-label { font-size: 1.2rem; color: var(--faint); }
+
+/* Short landscape screens: keep a tall written method and its keypad on one screen. */
+@media (orientation: landscape) and (max-height: 860px) {
+  .column { font-size: 1.45rem; padding: 10px 14px; gap: 3px 6px; }
+  .column .col-cell { aspect-ratio: 1 / 0.8; min-height: 40px; }
+  .column + .pad .key { min-height: 50px; font-size: 1.35rem; }
+  .col-digit, .col-op { min-height: 1.3em; line-height: 1.3em; }
+}

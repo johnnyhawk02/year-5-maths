@@ -4,6 +4,7 @@ import { makeRng } from '../engine/rng';
 import { isCorrect, type Level, type Question, type Response } from '../engine/types';
 import { Choice } from '../inputs/Choice';
 import { ColumnGrid, columnValue } from '../inputs/ColumnGrid';
+import { DivisionGrid, divisionValue, emptyDivision } from '../inputs/DivisionGrid';
 import { NumberLine } from '../inputs/NumberLine';
 import { NumberPad, padValue } from '../inputs/NumberPad';
 import { Order } from '../inputs/Order';
@@ -26,6 +27,7 @@ const rightAnswer = (q: Question): string => {
     case 'order': return q.answer.join(',  ');
     case 'line': return fmt(q.answer);
     case 'column': return fmt(q.answer);
+    case 'division': return fmt(q.answer) + (q.askRemainder ? ` remainder ${q.remainder}` : '');
   }
 };
 
@@ -42,6 +44,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
   const [placed, setPlaced] = useState<string[]>([]);
   const [point, setPoint] = useState<number | null>(null);
   const [cells, setCells] = useState<string[]>([]);
+  const [division, setDivision] = useState(emptyDivision);
   const [checked, setChecked] = useState<null | boolean>(null);
   const [hint, setHint] = useState(false);
   const [score, setScore] = useState(0);
@@ -85,7 +88,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
   const item = items[index];
   const q = item.q;
   const response: Response =
-    q.kind === 'number' ? padValue(pad) : q.kind === 'column' ? columnValue(cells) : q.kind === 'choice' ? pick : q.kind === 'line' ? point : placed.length === q.items.length ? placed : null;
+    q.kind === 'number' ? padValue(pad) : q.kind === 'column' ? columnValue(cells) : q.kind === 'division' ? divisionValue(division, q.askRemainder) : q.kind === 'choice' ? pick : q.kind === 'line' ? point : placed.length === q.items.length ? placed : null;
   const locked = checked !== null;
 
   const check = () => {
@@ -116,6 +119,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
     setPlaced([]);
     setPoint(null);
     setCells([]);
+    setDivision(emptyDivision());
     setChecked(null);
     setHint(false);
   };
@@ -154,8 +158,11 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
         </section>
 
         <section class="a-side">
-          {q.kind === 'number' && <NumberPad value={pad} onChange={setPad} allowNegative={q.allowNegative} unit={q.unit} disabled={locked} />}
-          {q.kind === 'column' && <ColumnGrid key={index} op={q.op} rows={q.rows} answer={q.answer} value={cells} onChange={setCells} disabled={locked} />}
+          {q.kind === 'number' && <NumberPad value={pad} onChange={setPad} allowNegative={q.allowNegative} decimal={q.decimal} unit={q.unit} disabled={locked} />}
+          {q.kind === 'column' && <ColumnGrid key={index} op={q.op} rows={q.rows} answer={q.answer} workRows={q.workRows} value={cells} onChange={setCells} disabled={locked} />}
+          {q.kind === 'division' && (
+            <DivisionGrid key={index} dividend={q.dividend} divisor={q.divisor} askRemainder={q.askRemainder} value={division} onChange={setDivision} disabled={locked} />
+          )}
           {q.kind === 'choice' && <Choice options={q.options} value={pick} onChange={setPick} disabled={locked} />}
           {q.kind === 'order' && <Order items={q.items} value={placed} onChange={setPlaced} disabled={locked} />}
           {q.kind === 'line' && (
