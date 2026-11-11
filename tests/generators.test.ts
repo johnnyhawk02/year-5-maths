@@ -11,6 +11,7 @@ const parse = (s: string): number => {
   // Fractions are written {3/4} or {2 3/4}.
   const f = s.match(/^\{(?:(\d+) )?(\d+)\/(\d+)\}$/);
   if (f) return Number(f[1] ?? 0) + Number(f[2]) / Number(f[3]);
+  if (s.endsWith('%')) return Number(s.slice(0, -1)) / 100;
   return Number(s.replace(/,/g, '').replace('−', '-').replace('°C', ''));
 };
 
@@ -591,5 +592,175 @@ describe('unit 4 answers are right', () => {
         }
       });
     }
+  });
+});
+
+describe('unit 5 answers are right', () => {
+  const each = (id: string, fn: (q: Question) => void) => {
+    const c = ALL_CONTENT.find((x) => x.id === id)!;
+    for (const level of [1, 2, 3] as Level[]) for (let seed = 1; seed <= 3000; seed++) fn(c.generate(level, makeRng(seed)));
+  };
+  const close = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThan(1e-9);
+  // Works out text such as "0.3 + {4/100}" with ? replaced by the answer.
+  const value = (expr: string, missing?: number) =>
+    Function(
+      `return (${expr
+        .replace(/\?/g, String(missing))
+        .replace(/\{(\d+) (\d+)\/(\d+)\}/g, '($1+$2/$3)')
+        .replace(/\{(\d+)\/(\d+)\}/g, '($1/$2)')
+        .replace(/(\d+)%/g, '($1/100)')
+        .replace(/×/g, '*')
+        .replace(/−/g, '-')})`,
+    )() as number;
+  // The first fraction, percentage or number written in a piece of text.
+  const firstValue = (s: string) => value(s.match(/\{[^}]+\}|\d+(?:\.\d+)?%?/)![0]);
+  const numbers = (s: string) => [...s.matchAll(/\d+(?:\.\d+)?/g)].map((m) => Number(m[0]));
+  const answerOf = (q: Question) => {
+    if (q.kind === 'number') return q.answer;
+    if (q.kind === 'fraction') return q.answer.whole + q.answer.num / q.answer.den;
+    throw new Error('unexpected kind');
+  };
+  const hcf = (a: number, b: number): number => (b ? hcf(b, a % b) : a);
+  // Rounding done on whole hundredths, separately from the app's own helper.
+  const hundredths = (x: number) => Math.round(x * 100);
+  const toTenth = (x: number) => Math.floor((hundredths(x) + 5) / 10) / 10;
+  const pickLargerOrSmaller = (q: Question) => {
+    if (q.kind !== 'choice') throw new Error('unexpected kind');
+    const [a, b] = q.options.map(parse);
+    expect(q.options.length).toBe(2);
+    expect(Math.abs(a - b)).toBeGreaterThan(1e-9);
+    close(parse(q.options[q.answer]), q.prompt.includes('larger') ? Math.max(a, b) : Math.min(a, b));
+  };
+
+  it('decimals as fractions', () => {
+    each('decimals-percentages-1', (q) => {
+      close(answerOf(q), firstValue(q.prompt));
+      if (q.kind === 'fraction') {
+        expect(q.simplest ?? false).toBe(q.prompt.includes('simplest'));
+        if (q.simplest) expect(hcf(q.answer.num, q.answer.den)).toBe(1);
+        else expect([10, 100]).toContain(q.answer.den);
+      }
+    });
+  });
+
+  it('thousandths', () => {
+    each('decimals-percentages-2', (q) => {
+      if (q.kind === 'choice') {
+        const [, digit, text] = q.prompt.match(/digit (\d) in ([\d.]+)/)!;
+        const [whole, places] = text.split('.');
+        expect(text.split(digit).length).toBe(2); // the digit appears once
+        const name = whole === digit ? 'ones' : ['tenths', 'hundredths', 'thousandths'][places.indexOf(digit)];
+        expect(q.options[q.answer]).toBe(`${digit} ${name}`);
+        expect(q.options.length).toBe(4);
+      } else if (q.kind === 'number') {
+        if (q.show) {
+          const [left, right] = q.show.split('=');
+          close(value(left, q.answer), value(right, q.answer));
+        } else if (q.prompt.includes('more than') || q.prompt.includes('less than')) {
+          const [step, start] = numbers(q.prompt);
+          close(q.answer, q.prompt.includes('more') ? start + step : start - step);
+        } else close(q.answer, firstValue(q.prompt));
+      } else throw new Error('unexpected kind');
+    });
+  });
+
+  it('rounding', () => {
+    each('decimals-percentages-3', (q) => {
+      if (q.kind === 'choice') {
+        const target = numbers(q.prompt)[0];
+        const hits = q.options.map((o) => Math.abs(toTenth(parse(o)) - target) < 1e-9);
+        expect(hits.filter(Boolean).length).toBe(1);
+        expect(hits[q.answer]).toBe(true);
+      } else if (q.kind === 'number') {
+        const x = numbers(q.prompt)[0];
+        if (q.prompt.includes('whole number')) expect(q.answer).toBe(Math.floor((hundredths(x) + 50) / 100));
+        else if (q.prompt.includes('could be')) {
+          const outside = q.prompt.includes('smallest') ? q.answer - 0.01 : q.answer + 0.01;
+          close(toTenth(q.answer), x);
+          expect(Math.abs(toTenth(outside) - x)).toBeGreaterThan(0.05);
+        } else close(q.answer, toTenth(x));
+        expect(q.explain.at(-1)).toContain(q.prompt.includes('could be') ? String(q.answer) : ` ${Number.isInteger(q.answer) && !q.prompt.includes('whole') ? q.answer.toFixed(1) : q.answer}.`);
+      } else throw new Error('unexpected kind');
+    });
+  });
+
+  it('ordering', () => {
+    each('decimals-percentages-4', (q) => {
+      if (q.kind === 'order') return; // order is checked by value in the shape test
+      if (q.kind !== 'choice') throw new Error('unexpected kind');
+      if (q.prompt.includes('sign')) {
+        const [a, b] = numbers(q.show!);
+        expect(a).not.toBe(b);
+        expect(q.options[q.answer]).toBe(a < b ? '<' : '>');
+      } else if (q.prompt.includes('between')) {
+        const [low, high] = numbers(q.prompt);
+        const inside = q.options.map((o) => parse(o) > low && parse(o) < high);
+        expect(inside.filter(Boolean).length).toBe(1);
+        expect(inside[q.answer]).toBe(true);
+      } else pickLargerOrSmaller(q);
+    });
+  });
+
+  it('decimal problems', () => {
+    each('decimals-percentages-5', (q) => {
+      if (q.kind !== 'number') throw new Error('unexpected kind');
+      expect(q.answer).toBeGreaterThan(0);
+      if (q.show?.includes('?')) {
+        const [left, right] = q.show.split('=');
+        close(value(left, q.answer), value(right, q.answer));
+      } else if (q.show) close(q.answer, value(q.show));
+      else {
+        const n = numbers(q.prompt);
+        const want = q.prompt.includes('altogether') ? n[0] + n[1] : q.prompt.includes('left') ? n[0] - n[1] - n[2] : Math.abs(n[0] - n[1]);
+        close(q.answer, want);
+        expect(q.unit).toBeTruthy();
+        expect(q.explain.at(-1)).toContain(`${q.answer} ${q.unit}`);
+      }
+    });
+  });
+
+  it('percentages', () => {
+    each('decimals-percentages-6', (q) => {
+      const n = numbers(q.prompt);
+      if (q.prompt.includes('class')) {
+        if (q.kind !== 'number') throw new Error('unexpected kind');
+        expect(q.answer).toBe(100 - n[0] - (q.prompt.includes('cycle') ? n[1] : 0));
+        expect(q.answer).toBeGreaterThan(0);
+        expect(q.unit).toBe('%');
+      } else if (q.kind === 'number' && q.unit === '%') {
+        expect(q.prompt).toContain('as a percentage');
+        close(q.answer / 100, firstValue(q.prompt));
+      } else {
+        expect(q.prompt).toMatch(/as a (decimal|fraction)/);
+        close(answerOf(q), firstValue(q.prompt));
+      }
+    });
+  });
+
+  it('fractions, decimals and percentages', () => {
+    each('decimals-percentages-7', (q) => {
+      if (q.kind === 'order') {
+        expect(new Set(q.items.map((i) => (i.endsWith('%') ? 'p' : i.startsWith('{') ? 'f' : 'd'))).size).toBeGreaterThan(1);
+        // The percentages given in the working must match the cards.
+        for (const m of q.explain[1].matchAll(/(\{[^}]+\}|[\d.]+) = (\d+%)/g)) close(parse(m[1]), parse(m[2]));
+      } else if (q.kind === 'choice' && q.prompt.includes('same as')) {
+        const target = firstValue(q.prompt);
+        const same = q.options.map((o) => Math.abs(parse(o) - target) < 1e-9);
+        expect(same.filter(Boolean).length).toBe(1);
+        expect(same[q.answer]).toBe(true);
+        expect(q.options.length).toBe(4);
+      } else if (q.kind === 'choice') pickLargerOrSmaller(q);
+      else if (q.kind === 'number' && q.unit === '%') close(q.answer / 100, firstValue(q.prompt));
+      else {
+        close(answerOf(q), firstValue(q.prompt));
+        if (q.kind === 'fraction') { expect(q.simplest).toBe(true); expect(hcf(q.answer.num, q.answer.den)).toBe(1); }
+      }
+      // Each chain of equals signs in the working must hold all the way along.
+      for (const line of q.explain) {
+        if (!line.includes(' = ') || line.includes(',')) continue;
+        const parts = line.split(' = ').map((p) => value(p));
+        parts.forEach((p) => close(p, parts[0]));
+      }
+    });
   });
 });
