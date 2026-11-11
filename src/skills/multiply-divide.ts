@@ -1,4 +1,5 @@
 // Unit 3: Multiplication and division. All wording and questions are our own.
+import { divisionPicture, longMultiplicationPicture, shortMultiplicationPicture } from '../engine/written';
 import { fmt } from '../engine/format';
 import type { Rng } from '../engine/rng';
 import type { NumberQuestion, Question, SkillContent } from '../engine/types';
@@ -461,11 +462,14 @@ function multiplyWritten(r: Rng, level: number): Question {
 const longMultiplication: SkillContent = {
   id: 'multiply-divide-6',
   example: [
-    { say: 'To multiply by one digit, work from the ones, carrying as you go.', show: `2,346 ${X} 7 = 16,422` },
-    { say: 'To multiply by a two-digit number, split it into ones and tens.', show: `346 ${X} 27  =  346 ${X} 7  +  346 ${X} 20` },
-    { say: 'First row: multiply by the ones.', show: `346 ${X} 7 = 2,422` },
-    { say: 'Second row: write a 0 in the ones place, then multiply by the tens digit.', show: `346 ${X} 20 = 6,920` },
-    { say: 'Add the two rows to get the answer.', show: '2,422 + 6,920 = 9,342' },
+    { say: 'To multiply by one digit, write it under the ones and work from the right.', show: `346 ${X} 7`, written: shortMultiplicationPicture(346, 7, 0) },
+    { say: `Ones: 6 ${X} 7 = 42. Write 2 and carry the 4 by writing it small under the tens column.`, written: shortMultiplicationPicture(346, 7, 1) },
+    { say: `Tens: 4 ${X} 7 = 28, and the carried 4 makes 32. Write 2 and carry the 3.`, written: shortMultiplicationPicture(346, 7, 2) },
+    { say: `Hundreds: 3 ${X} 7 = 21, and the carried 3 makes 24. Write 24. The answer is 2,422.`, written: shortMultiplicationPicture(346, 7, 4) },
+    { say: 'To multiply by a two-digit number, do it in two rows. First row: multiply by the ones digit, 7, just as before.', show: `346 ${X} 27`, written: longMultiplicationPicture(346, 27, 1) },
+    { say: 'Second row: you are multiplying by 2 tens, so write a 0 in the ones place first.', written: longMultiplicationPicture(346, 27, 2) },
+    { say: `Then multiply by the 2: 346 ${X} 2 = 692. With the zero, the row says 6,920.`, written: longMultiplicationPicture(346, 27, 3) },
+    { say: 'Draw a line and add the two rows to get the answer: 9,342.', written: longMultiplicationPicture(346, 27, 4) },
   ],
   generate: (level, r) => multiplyWritten(r, level),
 };
@@ -523,11 +527,11 @@ function remainderInContext(r: Rng): Question {
 const shortDivision: SkillContent = {
   id: 'multiply-divide-7',
   example: [
-    { say: 'Short division works from the left, one digit at a time. The answer goes above the line.', show: `952 ${DIV} 4` },
-    { say: '4 into 9 goes 2, with 1 left over. Write 2 above and carry the 1 to make 15.' },
-    { say: '4 into 15 goes 3, with 3 left over. Write 3 and carry the 3 to make 32.' },
-    { say: '4 into 32 goes 8 exactly.', show: `952 ${DIV} 4 = 238` },
-    { say: 'If something is left at the end, it is the remainder. In a word problem, think about what the remainder means.', show: `953 ${DIV} 4 = 238 remainder 1` },
+    { say: 'Short division works from the left, one digit at a time. Write the number you divide by outside, and the answer goes above the line.', show: `952 ${DIV} 4`, written: divisionPicture(952, 4, 0) },
+    { say: '4 into 9 goes 2, with 1 left over. Write 2 above the 9. Carry the 1 by writing it small in front of the 5, which makes 15.', written: divisionPicture(952, 4, 1) },
+    { say: '4 into 15 goes 3, with 3 left over. Write 3 above, and carry the 3 in front of the 2 to make 32.', written: divisionPicture(952, 4, 2) },
+    { say: '4 into 32 goes 8 exactly. The answer is 238.', written: divisionPicture(952, 4, 3) },
+    { say: 'If something is left at the end, it is the remainder. Write it after the answer with an r. In a word problem, think about what the remainder means.', show: `953 ${DIV} 4 = 238 remainder 1`, written: divisionPicture(953, 4, 3) },
   ],
   generate(level, r) {
     if (level === 1) return divideWritten(r, 3, false);

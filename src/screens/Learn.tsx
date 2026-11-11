@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { getSkillContent } from '../skills';
 import { FractionBars } from '../inputs/FractionBars';
 import { Rich } from '../inputs/Rich';
+import { WrittenPicture } from '../inputs/WrittenPicture';
 import { findSkill } from './Skill';
 
 export function Learn({ id }: { id: string }) {
@@ -20,6 +21,7 @@ export function Learn({ id }: { id: string }) {
           <li key={i} class="card example-step">
             <p><Rich text={s.say} /></p>
             {s.show && <p class="show"><Rich text={s.show} /></p>}
+            {s.written && <WrittenPicture picture={s.written} />}
             {s.bars && <FractionBars bars={s.bars} />}
           </li>
         ))}

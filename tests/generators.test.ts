@@ -6,6 +6,7 @@ import { UNITS } from '../src/curriculum';
 import { additionWorking, subtractionWorking } from '../src/skills/add-subtract';
 import { divisionWorking, factorsOf, isPrime, shortMultiplicationWorking } from '../src/skills/multiply-divide';
 import { ALL_CONTENT } from '../src/skills';
+import { additionPicture, additionSteps, divisionPicture, divisionSteps, longMultiplicationPicture, shortMultiplicationPicture, shortMultiplicationSteps, subtractionPicture, subtractionSteps, type WRow, type Written } from '../src/engine/written';
 import { MIXED, ROUND_SIZE, TABLES, clock, isTableKey, makeRound } from '../src/tables';
 
 const parse = (s: string): number => {
@@ -816,5 +817,104 @@ describe('times tables', () => {
     expect(isTableKey('1')).toBe(false);
     expect(clock(75)).toBe('1:15');
     expect(clock(9)).toBe('0:09');
+  });
+});
+
+describe('written method pictures', () => {
+  const rowsOf = (w: Written): WRow[] => {
+    if (w.kind !== 'column') throw new Error('expected columns');
+    return w.rows.filter((r): r is WRow => r !== 'rule');
+  };
+  const read = (row: WRow) => Number(row.cells.map((c) => c.d).join('') || '0');
+  const hiCount = (w: Written) => (w.kind === 'column' ? rowsOf(w).flatMap((r) => r.cells) : [...w.digits, ...w.answer]).filter((c) => c.hi).length;
+
+  it('addition builds up to the right answer with the right carries', () => {
+    const r = makeRng(7);
+    for (let i = 0; i < 3000; i++) {
+      const rows = Array.from({ length: r.int(2, 3) }, () => r.int(1, 99999));
+      const total = rows.reduce((a, b) => a + b, 0);
+      const steps = additionSteps(rows);
+      expect(hiCount(additionPicture(rows, 0))).toBe(0);
+      const done = rowsOf(additionPicture(rows, steps));
+      const [answer, carries] = done.slice(-2);
+      expect(read(answer)).toBe(total);
+      // Adding each column with the carry written under it must give the answer digit.
+      const width = answer.cells.length;
+      for (let col = 0; col < width; col++) {
+        const column = rows.reduce((a, n) => a + Number(String(n).padStart(width, '0')[col]), 0) + Number(carries.cells[col].d || 0);
+        if (carries.cells[col].d || col > 0 || String(Math.max(...rows)).length === width) expect(column % 10).toBe(Number(answer.cells[col].d));
+      }
+      // Part way through, only the columns done so far are filled in.
+      const half = rowsOf(additionPicture(rows, 2)).at(-2)!;
+      expect(half.cells.filter((c) => c.d !== '').length).toBe(Math.min(2, width));
+      expect(hiCount(additionPicture(rows, 2))).toBeGreaterThan(0);
+    }
+  });
+
+  it('subtraction shows exchanges that make every column work', () => {
+    const r = makeRng(11);
+    for (let i = 0; i < 3000; i++) {
+      const a = r.int(100, 999999), b = r.int(1, a);
+      const [top, bottom, answer] = rowsOf(subtractionPicture(a, b, subtractionSteps(a)));
+      expect(read(answer)).toBe(a - b);
+      expect(read(bottom)).toBe(b);
+      top.cells.forEach((c, col) => {
+        const value = c.struck ? Number(c.above) : Number(c.d) + (c.pre ? 10 : 0);
+        const diff = value - Number(bottom.cells[col].d || 0);
+        expect(diff).toBeGreaterThanOrEqual(0);
+        expect(diff).toBeLessThanOrEqual(9);
+        expect(diff).toBe(Number(answer.cells[col].d || 0));
+      });
+      expect(hiCount(subtractionPicture(a, b, 0))).toBe(0);
+    }
+  });
+
+  it('multiplication rows are right', () => {
+    const r = makeRng(13);
+    for (let i = 0; i < 3000; i++) {
+      const a = r.int(12, 9999), b = r.int(2, 9);
+      const short = rowsOf(shortMultiplicationPicture(a, b, shortMultiplicationSteps(a, b)));
+      expect(read(short[2])).toBe(a * b);
+      // Each carry is the tens of the column to its right.
+      const width = short[2].cells.length;
+      let carry = 0;
+      for (let col = width - 1; col > width - String(a).length; col--) {
+        carry = Math.floor((Number(String(a).padStart(width, '0')[col]) * b + carry) / 10);
+        expect(Number(short[3].cells[col - 1].d || 0)).toBe(carry);
+      }
+      const c = r.int(11, 99);
+      const long = rowsOf(longMultiplicationPicture(a, c, 4));
+      expect(read(long[2])).toBe(a * (c % 10));
+      expect(read(long[3])).toBe(a * Math.floor(c / 10) * 10);
+      expect(read(long[4])).toBe(a * c);
+      const zero = rowsOf(longMultiplicationPicture(a, c, 2))[3];
+      expect(zero.cells.map((x) => x.d).join('')).toBe('0');
+    }
+  });
+
+  it('division carries each remainder to the next digit', () => {
+    const r = makeRng(17);
+    for (let i = 0; i < 3000; i++) {
+      const dividend = r.int(10, 99999), divisor = r.int(2, 9);
+      const w = divisionPicture(dividend, divisor, divisionSteps(dividend));
+      if (w.kind !== 'division') throw new Error('expected division');
+      expect(Number(w.answer.map((c) => c.d).join(''))).toBe(Math.floor(dividend / divisor));
+      expect(w.remainder ?? 0).toBe(dividend % divisor);
+      w.digits.forEach((c, k) => {
+        const value = Number(c.pre ?? 0) * 10 + Number(c.d);
+        expect(Math.floor(value / divisor)).toBe(Number(w.answer[k].d));
+        const next = w.digits[k + 1];
+        if (next) expect(Number(next.pre ?? 0)).toBe(value % divisor);
+      });
+      const start = divisionPicture(dividend, divisor, 0);
+      expect(start.kind === 'division' && start.answer.every((c) => c.d === '') && start.remainder === undefined).toBe(true);
+    }
+  });
+
+  it('every worked example of a written method has pictures', () => {
+    for (const id of ['add-subtract-1', 'add-subtract-2', 'multiply-divide-6', 'multiply-divide-7']) {
+      const c = ALL_CONTENT.find((x) => x.id === id)!;
+      expect(c.example.every((s) => s.written)).toBe(true);
+    }
   });
 });

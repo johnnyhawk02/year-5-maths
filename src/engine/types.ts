@@ -1,4 +1,5 @@
 import type { Rng } from './rng';
+import type { Written } from './written';
 
 // 1 = warm-up, 2 = core practice, 3 = greater depth.
 export type Level = 1 | 2 | 3;
@@ -98,6 +99,8 @@ export interface Step {
   say: string;
   show?: string;
   bars?: Bar[];
+  /** A written method drawn as it looks on paper at this point. */
+  written?: Written;
 }
 
 export interface SkillContent {
