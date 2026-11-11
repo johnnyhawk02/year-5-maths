@@ -7,7 +7,7 @@ import { ColumnGrid, columnValue } from '../inputs/ColumnGrid';
 import { DivisionGrid, divisionValue, emptyDivision } from '../inputs/DivisionGrid';
 import { FractionBars } from '../inputs/FractionBars';
 import { FractionInput, emptyFraction, fractionValue } from '../inputs/FractionInput';
-import { AlpacaHelper } from '../inputs/Alpaca';
+import { AlpacaHelper, PLACES, type Place } from '../inputs/Alpaca';
 import { PictureView } from '../inputs/PictureView';
 import { Rich } from '../inputs/Rich';
 import { WrittenPicture } from '../inputs/WrittenPicture';
@@ -96,6 +96,12 @@ export function Session({ id, mode, onRecorded, helper = true }: { id: string; m
   const [done, setDone] = useState(false);
   const [streak, setStreak] = useState(0);
   const [alpaca, setAlpaca] = useState<Helper>(null);
+  const [place, setPlace] = useState<Place>('bottom-left');
+
+  // Each time he appears he picks a new place to pop in from.
+  useEffect(() => {
+    if (alpaca && alpaca.kind !== 'hint') setPlace((was) => { const others = PLACES.filter((p) => p !== was); return others[Math.floor(Math.random() * others.length)]; });
+  }, [alpaca === null, alpaca?.kind === 'hint']);
 
   // The alpaca pops up when a question has been left alone for a while.
   const touched = JSON.stringify([pad, pick, placed, point, cells, division, fraction]);
@@ -300,7 +306,7 @@ export function Session({ id, mode, onRecorded, helper = true }: { id: string; m
         </section>
       </div>
 
-      <AlpacaHelper show={alpaca !== null} onTap={alpaca?.kind === 'offer' ? () => setAlpaca({ kind: 'hint' }) : undefined} onClose={() => setAlpaca(null)}>
+      <AlpacaHelper key={place} place={place} show={alpaca !== null} onTap={alpaca?.kind === 'offer' ? () => setAlpaca({ kind: 'hint' }) : undefined} onClose={() => setAlpaca(null)}>
         {alpaca?.kind === 'say' && alpaca.text}
         {alpaca?.kind === 'offer' && 'Stuck? I can give you a hint.'}
         {alpaca?.kind === 'hint' && <Rich text={q.explain[0]} />}

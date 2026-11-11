@@ -1,9 +1,18 @@
 import type { ComponentChildren } from 'preact';
 
 /** The alpaca's head and neck, drawn in code so it needs no image file. */
-export function AlpacaFace() {
+// A long woolly neck with scalloped edges, running well below the head so it can reach in from off screen.
+const NECK = 'M41 92 q-10 11 -1 22 q-10 11 -1 22 q-10 11 -1 22 q-10 11 -1 22 q-10 11 -1 22 q-10 11 -1 22 q-10 11 -1 22 q-10 11 -1 22 H88 q10 -11 -1 -22 q10 -11 -1 -22 q10 -11 -1 -22 q10 -11 -1 -22 q10 -11 -1 -22 q10 -11 -1 -22 q10 -11 -1 -22 q10 -11 -1 -22 Z';
+const TUFTS = [112, 134, 156, 178, 200, 222, 244].map((y, i) => `M${i % 2 ? 50 : 42} ${y} q5 5 10 0 M${i % 2 ? 70 : 62} ${y + 9} q5 5 10 0`).join(' ');
+
+export type Place = 'bottom-left' | 'bottom-right' | 'left' | 'right' | 'top';
+export const PLACES: Place[] = ['bottom-left', 'bottom-right', 'left', 'right', 'top'];
+
+export function AlpacaFace({ neck = false }: { neck?: boolean }) {
   return (
-    <svg class="alpaca-face" viewBox="0 0 120 150" aria-hidden="true">
+    <svg class="alpaca-face" viewBox={neck ? '0 0 120 270' : '0 0 120 150'} aria-hidden="true">
+      <path class="alpaca-neck" d={NECK} />
+      <path class="alpaca-fluff" d={TUFTS} />
       <g class="alpaca-wool">
         <ellipse cx="30" cy="30" rx="9" ry="19" transform="rotate(-22 30 30)" />
         <ellipse cx="90" cy="30" rx="9" ry="19" transform="rotate(22 90 30)" />
@@ -13,13 +22,11 @@ export function AlpacaFace() {
         <ellipse cx="90" cy="31" rx="4" ry="12" transform="rotate(22 90 31)" />
       </g>
       <g class="alpaca-wool">
-        <path d="M38 96 Q34 160 36 160 H84 Q86 160 82 96 Z" />
         <ellipse cx="60" cy="64" rx="35" ry="31" />
         <circle cx="44" cy="34" r="13" />
         <circle cx="60" cy="27" r="14" />
         <circle cx="76" cy="34" r="13" />
       </g>
-      <path class="alpaca-fluff" d="M40 112 q5 5 10 0 M58 124 q5 5 10 0 M46 138 q5 5 10 0 M66 108 q5 5 10 0" />
       <ellipse class="alpaca-muzzle" cx="60" cy="76" rx="19" ry="14" />
       <g class="alpaca-pink cheeks"><circle cx="35" cy="72" r="6" /><circle cx="85" cy="72" r="6" /></g>
       <g class="alpaca-eyes">
@@ -32,23 +39,20 @@ export function AlpacaFace() {
 }
 
 /**
- * Pops the alpaca up from the bottom corner with something to say.
- * With `onTap` the whole helper is a button (used to offer a hint).
+ * Pops the alpaca in from an edge of the screen with something to say.
+ * With `onTap` the alpaca is a button that gives a hint.
  */
-export function AlpacaHelper({ show, children, onTap, onClose }: { show: boolean; children?: ComponentChildren; onTap?: () => void; onClose: () => void }) {
+export function AlpacaHelper({ show, place, children, onTap, onClose }: { show: boolean; place: Place; children?: ComponentChildren; onTap?: () => void; onClose: () => void }) {
+  if (!show) return <div aria-live="polite" />;
   return (
-    <div class={`alpaca ${show ? 'up' : ''}`} aria-live="polite">
-      {show && (
-        <>
-          <button class="alpaca-body" onClick={onTap ?? onClose} aria-label={onTap ? 'Show a hint' : 'Hide the alpaca'}>
-            <AlpacaFace />
-          </button>
-          <div class="alpaca-bubble">
-            <div>{children}</div>
-            {onTap ? <button class="link" onClick={onTap}>Show me</button> : <button class="link" onClick={onClose}>Thanks</button>}
-          </div>
-        </>
-      )}
+    <div class={`alpaca at-${place}`} aria-live="polite">
+      <button class="alpaca-body" onClick={onTap ?? onClose} aria-label={onTap ? 'Show a hint' : 'Hide the alpaca'}>
+        <AlpacaFace neck />
+      </button>
+      <div class="alpaca-bubble">
+        <div>{children}</div>
+        {onTap ? <button class="link" onClick={onTap}>Show me</button> : <button class="link" onClick={onClose}>Thanks</button>}
+      </div>
     </div>
   );
 }
