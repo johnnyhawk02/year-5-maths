@@ -44,7 +44,16 @@ export interface LineQuestion extends Base {
   answer: number;
 }
 
-export type Question = NumberQuestion | ChoiceQuestion | OrderQuestion | LineQuestion;
+/** A written calculation set out in columns, answered one digit at a time. */
+export interface ColumnQuestion extends Base {
+  kind: 'column';
+  op: '+' | '-';
+  /** The numbers being added, or the two numbers of a subtraction, top first. */
+  rows: number[];
+  answer: number;
+}
+
+export type Question = NumberQuestion | ChoiceQuestion | OrderQuestion | LineQuestion | ColumnQuestion;
 export type Response = number | string[] | null;
 
 export interface Step {
@@ -65,6 +74,7 @@ export function isCorrect(q: Question, r: Response): boolean {
     case 'number':
     case 'choice':
     case 'line':
+    case 'column':
       return typeof r === 'number' && r === q.answer;
     case 'order':
       return Array.isArray(r) && r.length === q.answer.length && r.every((v, i) => v === q.answer[i]);

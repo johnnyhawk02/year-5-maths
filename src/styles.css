@@ -389,3 +389,18 @@ button { font: inherit; color: inherit; }
 @media (min-width: 900px) and (orientation: landscape) {
   .q-layout.one-col { grid-template-columns: 1fr; }
 }
+
+/* Column layout for written methods */
+.column {
+  display: grid; gap: 6px 6px; align-items: center;
+  padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  font-size: 1.8rem; font-weight: 600;
+}
+.col-digit, .col-op { text-align: center; min-height: 1.5em; line-height: 1.5em; }
+.col-rule { height: 3px; background: var(--ink); border-radius: 2px; }
+.col-cell {
+  aspect-ratio: 1 / 1.15; min-height: 48px; padding: 0; font: inherit;
+  background: var(--page); border: 2px solid var(--line); border-radius: 8px; cursor: pointer;
+}
+.col-cell.active { border-color: var(--spot1); box-shadow: inset 0 0 0 2px var(--spot1); }
+.col-cell:disabled { opacity: 1; color: var(--ink); }
