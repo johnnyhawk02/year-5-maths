@@ -32,11 +32,18 @@ export function ColumnGrid({ op, rows, answer, workRows = [], value, onChange, d
   const [work, setWork] = useState<string[][]>(() => workRows.map(blank));
   const answerRow = workRows.length;
   const [active, setActive] = useState({ row: 0, col: width - 1 });
+  // Jotting space, as on paper. None of it is marked.
+  const CARRY = -1;
+  const hasCarry = workRows.length === 0 && op !== '-';
+  const [carry, setCarry] = useState<string[]>(blank);
+  // For subtraction: which top digits have given one to the column on their right.
+  const [given, setGiven] = useState<boolean[]>(() => Array<boolean>(width).fill(false));
 
   const digitsOf = (n: number) => String(n).padStart(width, ' ').split('');
-  const rowCells = (row: number) => (row === answerRow ? cells : work[row]);
+  const rowCells = (row: number) => (row === CARRY ? carry : row === answerRow ? cells : work[row]);
   const setRow = (row: number, next: string[]) => {
-    if (row === answerRow) onChange(next);
+    if (row === CARRY) setCarry(next);
+    else if (row === answerRow) onChange(next);
     else setWork(work.map((w, i) => (i === row ? next : w)));
   };
 
@@ -44,6 +51,10 @@ export function ColumnGrid({ op, rows, answer, workRows = [], value, onChange, d
     if (disabled) return;
     const { row, col } = active;
     const next = [...rowCells(row)];
+    if (row === CARRY) {
+      next[col] = k === 'del' ? '' : k;
+      return setRow(row, next);
+    }
     if (k === 'del') {
       if (next[col] !== '') next[col] = '';
       else if (col < width - 1) {
@@ -74,13 +85,44 @@ export function ColumnGrid({ op, rows, answer, workRows = [], value, onChange, d
       </button>
     ));
 
+  // Exchanging: the digit that gives goes down by one, and its right-hand neighbour gains ten.
+  const topDigits = digitsOf(rows[0]);
+  const got = (i: number) => i > 0 && given[i - 1];
+  const topValue = (i: number) => Number(topDigits[i]) + (got(i) ? 10 : 0) - (given[i] ? 1 : 0);
+  const exchange = (i: number) => {
+    if (disabled) return;
+    if (!given[i] && topValue(i) === 0) return; // nothing to give yet
+    // Taking an exchange back also takes back any that depended on it.
+    const next = [...given];
+    next[i] = !next[i];
+    if (!next[i]) for (let k = i + 1; k < width; k++) if (next[k] && Number(topDigits[k]) + (next[k - 1] ? 10 : 0) - 1 < 0) next[k] = false;
+    setGiven(next);
+  };
+
   return (
     <div class="pad-wrap">
-      <div class="column" style={cols} aria-label="Written calculation">
+      <div class={`column ${op === '-' ? 'exchanging' : ''}`} style={cols} aria-label="Written calculation">
         {rows.map((r, ri) => (
           <>
             <span class="col-op">{ri === rows.length - 1 ? SIGN[op] : ''}</span>
-            {digitsOf(r).map((d, i) => <span key={`${ri}-${i}`} class="col-digit">{d}</span>)}
+            {digitsOf(r).map((d, i) =>
+              op === '-' && ri === 0 && d !== ' ' ? (
+                <button
+                  key={`${ri}-${i}`}
+                  type="button"
+                  class={`col-digit top-digit ${given[i] ? 'gave' : ''}`}
+                  disabled={disabled || i === width - 1}
+                  aria-label={`${d}${given[i] ? `, crossed out, now ${topValue(i)}` : got(i) ? `, now ${topValue(i)}` : ''}${i === width - 1 ? '' : '. Tap to exchange'}`}
+                  onClick={() => exchange(i)}
+                >
+                  {given[i] && <span class="w-above">{topValue(i)}</span>}
+                  {got(i) && !given[i] && <span class="w-pre">1</span>}
+                  <span class={given[i] ? 'w-struck' : ''}>{d}</span>
+                </button>
+              ) : (
+                <span key={`${ri}-${i}`} class="col-digit">{d}</span>
+              ),
+            )}
           </>
         ))}
         <span class="col-rule" style={full} />
@@ -99,7 +141,30 @@ export function ColumnGrid({ op, rows, answer, workRows = [], value, onChange, d
         )}
         <span class="col-op" />
         {boxes(answerRow, 'Answer')}
+        {hasCarry && (
+          <>
+            <span class="col-op" />
+            {carry.map((c, i) =>
+              i === width - 1 ? (
+                <span key={`c-${i}`} />
+              ) : (
+                <button
+                  key={`c-${i}`}
+                  type="button"
+                  class={`col-cell carry ${active.row === CARRY && active.col === i && !disabled ? 'active' : ''}`}
+                  disabled={disabled}
+                  aria-label={`Carry box ${i + 1} of ${width - 1}`}
+                  onClick={() => setActive({ row: CARRY, col: i })}
+                >
+                  {c}
+                </button>
+              ),
+            )}
+          </>
+        )}
       </div>
+      {hasCarry && <p class="hint-text jot">Small boxes are for carried digits.</p>}
+      {op === '-' && <p class="hint-text jot">To exchange, tap the top digit you are taking one from.</p>}
       <Keys press={press} disabled={disabled} />
     </div>
   );
