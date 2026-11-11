@@ -2,9 +2,11 @@ import { useState } from 'preact/hooks';
 import { UNITS } from '../curriculum';
 import { tickedCount, type Progress } from '../progress';
 import { hasContent } from '../skills';
+import { loadChecks } from '../checks';
 
 export function MapScreen({ progress }: { progress: Progress }) {
   const [open, setOpen] = useState<string | null>(UNITS[0].id);
+  const checks = loadChecks();
   return (
     <div class="stack">
       <h1>Map</h1>
@@ -50,12 +52,23 @@ export function MapScreen({ progress }: { progress: Progress }) {
                       </li>
                     );
                   })}
+                  <li key="test">
+                    <a class="skill ready" href={`#/check/${u.id}`}>
+                      <span class={`tick ${checks[u.id] && checks[u.id].best >= checks[u.id].last.total * 0.8 ? 'done' : ''}`} aria-hidden="true" />
+                      <span><strong>Unit test</strong></span>
+                      <span class="soon">{checks[u.id] ? `Best ${checks[u.id].best} / ${checks[u.id].last.total}` : 'Start'} {'›'}</span>
+                    </a>
+                  </li>
                 </ul>
               )}
             </li>
           );
         })}
       </ol>
+      <div class="row">
+        <a class="btn" href="#/check/end">End of year check</a>
+        <a class="btn" href="#/check/start">Start check</a>
+      </div>
     </div>
   );
 }

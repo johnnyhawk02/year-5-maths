@@ -121,6 +121,13 @@ export function Options({ settings, onChange }: Props) {
       <div class="row">
         <button class="btn" onClick={() => onChange({ ...DEFAULTS })}>Back to the starting colours</button>
       </div>
+
+      <section class="card">
+        <p class="eyebrow">For grown-ups</p>
+        <h2>Progress and backup</h2>
+        <p>See what has been practised, save a backup file, or start again.</p>
+        <div class="row"><a class="btn" href="#/progress">Open progress</a></div>
+      </section>
     </div>
   );
 }

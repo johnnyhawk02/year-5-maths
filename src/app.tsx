@@ -11,9 +11,11 @@ import { Learn } from './screens/Learn';
 import { Session } from './screens/Session';
 import { TablesMenu, TablesRound } from './screens/Tables';
 import { loadProgress } from './progress';
+import { ProgressScreen } from './screens/Progress';
+import { isCheckId } from './checks';
 
 type Tab = 'home' | 'map' | 'options';
-type Page = Tab | 'skill' | 'learn' | 'try' | 'practise' | 'tables';
+type Page = Tab | 'skill' | 'learn' | 'try' | 'practise' | 'tables' | 'review' | 'check' | 'progress';
 interface Route { page: Page; id?: string }
 const TABS: Tab[] = ['home', 'map', 'options'];
 const WITH_ID: Page[] = ['skill', 'learn', 'try', 'practise'];
@@ -24,6 +26,8 @@ const readRoute = (): Route => {
   if ((TABS as Page[]).includes(page)) return { page };
   if (WITH_ID.includes(page) && id) return { page, id };
   if (page === 'tables') return { page, id };
+  if (page === 'review' || page === 'progress') return { page };
+  if (page === 'check' && id && isCheckId(id)) return { page, id };
   return { page: 'home' };
 };
 
@@ -80,7 +84,7 @@ export function App() {
   }
 
   // Lesson pages sit under the Map tab. Times tables are reached from Home.
-  const tab: Tab = (TABS as Page[]).includes(route.page) ? (route.page as Tab) : route.page === 'tables' ? 'home' : 'map';
+  const tab: Tab = (TABS as Page[]).includes(route.page) ? (route.page as Tab) : route.page === 'tables' || route.page === 'review' ? 'home' : route.page === 'progress' ? 'options' : 'map';
 
   return (
     <div class="shell">
@@ -116,6 +120,9 @@ export function App() {
         {(route.page === 'try' || route.page === 'practise') && (
           <Session key={`${route.page}/${route.id}`} id={route.id!} mode={route.page} onRecorded={() => setProgress(loadProgress())} />
         )}
+        {route.page === 'review' && <Session key="review" id="review" mode="review" onRecorded={() => setProgress(loadProgress())} />}
+        {route.page === 'check' && <Session key={`check/${route.id}`} id={route.id!} mode="check" onRecorded={() => setProgress(loadProgress())} />}
+        {route.page === 'progress' && <ProgressScreen progress={progress} onChanged={() => setProgress(loadProgress())} />}
         {route.page === 'tables' && (route.id ? <TablesRound key={route.id} id={route.id} /> : <TablesMenu />)}
       </main>
     </div>
