@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { fmt } from '../engine/format';
 import { makeRng } from '../engine/rng';
 import { isCorrect, type Level, type Question, type Response } from '../engine/types';
@@ -7,6 +7,7 @@ import { ColumnGrid, columnValue } from '../inputs/ColumnGrid';
 import { DivisionGrid, divisionValue, emptyDivision } from '../inputs/DivisionGrid';
 import { FractionBars } from '../inputs/FractionBars';
 import { FractionInput, emptyFraction, fractionValue } from '../inputs/FractionInput';
+import { AlpacaHelper } from '../inputs/Alpaca';
 import { PictureView } from '../inputs/PictureView';
 import { Rich } from '../inputs/Rich';
 import { WrittenPicture } from '../inputs/WrittenPicture';
@@ -26,6 +27,14 @@ type Mode = 'try' | 'practise' | 'review' | 'check';
 const PRACTISE_LEVELS: Level[] = [1, 1, 1, 2, 2, 2, 2, 3, 3, 3];
 const TRY_LEVELS: Level[] = [1, 1, 2];
 const MAX_EXTRA = 3;
+
+// What the alpaca says. It only gives hints where a hint is fair: not in reviews or checks.
+type Helper = null | { kind: 'say'; text: string } | { kind: 'offer' } | { kind: 'hint' };
+const IDLE_MS = 25000;
+const SAY_MS = 7000;
+const OOPS = ['Nearly. Read the working, then have another go.', 'Mistakes help you learn. Look at the steps.', 'Good try. See how it is done, then try the next one.', 'Not this time. You will get the next one.'];
+const CHEERS: Record<number, string> = { 3: 'Three in a row. Lovely work.', 5: 'Five in a row. You are flying.', 8: 'Eight in a row. Amazing.' };
+const SLOW = ['Take your time. Read the question once more.', 'No rush. Try it on paper if that helps.'];
 
 interface Item { q: Question; level: Level; extra: boolean; skillId: string }
 
@@ -62,7 +71,7 @@ const finishedWorking = (q: Question): Written | null => {
   return plain(b < 10 ? shortMultiplicationPicture(a, b, shortMultiplicationSteps(a, b)) : longMultiplicationPicture(a, b, LONG_MULTIPLICATION_STEPS));
 };
 
-export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRecorded: () => void }) {
+export function Session({ id, mode, onRecorded, helper = true }: { id: string; mode: Mode; onRecorded: () => void; helper?: boolean }) {
   const single = mode === 'try' || mode === 'practise';
   const found = single ? findSkill(id) : null;
   const rng = useMemo(() => makeRng(Date.now()), [id, mode]);
@@ -85,6 +94,25 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
   const [hint, setHint] = useState(false);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [alpaca, setAlpaca] = useState<Helper>(null);
+
+  // The alpaca pops up when a question has been left alone for a while.
+  const touched = JSON.stringify([pad, pick, placed, point, cells, division, fraction]);
+  useEffect(() => {
+    if (!helper || done || checked !== null || index >= items.length || alpaca?.kind === 'hint') return;
+    const t = setTimeout(() => {
+      setAlpaca(mode === 'try' || mode === 'practise' ? { kind: 'offer' } : { kind: 'say', text: SLOW[index % SLOW.length] });
+    }, IDLE_MS);
+    return () => clearTimeout(t);
+  }, [helper, done, checked, index, touched, alpaca?.kind === 'hint']);
+
+  // Things it says go away by themselves. A hint stays until the question is answered.
+  useEffect(() => {
+    if (alpaca?.kind !== 'say') return;
+    const t = setTimeout(() => setAlpaca(null), SAY_MS);
+    return () => clearTimeout(t);
+  }, [alpaca]);
 
   if (single && !found) return null;
 
@@ -174,6 +202,9 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
     if (response === null) return;
     const ok = isCorrect(q, response);
     setChecked(ok);
+    const run = ok ? streak + 1 : 0;
+    setStreak(run);
+    if (helper) setAlpaca(ok ? (CHEERS[run] ? { kind: 'say', text: CHEERS[run] } : null) : { kind: 'say', text: OOPS[index % OOPS.length] });
     if (mode === 'review') recordReview(loadProgress(), item.skillId, ok);
     if (!single) {
       if (ok) setScore(score + 1);
@@ -207,6 +238,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
     setFraction(emptyFraction());
     setChecked(null);
     setHint(false);
+    setAlpaca(null);
   };
 
   return (
@@ -267,6 +299,12 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
           </div>
         </section>
       </div>
+
+      <AlpacaHelper show={alpaca !== null} onTap={alpaca?.kind === 'offer' ? () => setAlpaca({ kind: 'hint' }) : undefined} onClose={() => setAlpaca(null)}>
+        {alpaca?.kind === 'say' && alpaca.text}
+        {alpaca?.kind === 'offer' && 'Stuck? I can give you a hint.'}
+        {alpaca?.kind === 'hint' && <Rich text={q.explain[0]} />}
+      </AlpacaHelper>
     </div>
   );
 }

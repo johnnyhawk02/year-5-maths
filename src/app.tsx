@@ -118,10 +118,10 @@ export function App() {
         {route.page === 'skill' && <SkillScreen id={route.id!} progress={progress} />}
         {route.page === 'learn' && <Learn key={route.id} id={route.id!} />}
         {(route.page === 'try' || route.page === 'practise') && (
-          <Session key={`${route.page}/${route.id}`} id={route.id!} mode={route.page} onRecorded={() => setProgress(loadProgress())} />
+          <Session key={`${route.page}/${route.id}`} id={route.id!} mode={route.page} helper={settings.helper} onRecorded={() => setProgress(loadProgress())} />
         )}
-        {route.page === 'review' && <Session key="review" id="review" mode="review" onRecorded={() => setProgress(loadProgress())} />}
-        {route.page === 'check' && <Session key={`check/${route.id}`} id={route.id!} mode="check" onRecorded={() => setProgress(loadProgress())} />}
+        {route.page === 'review' && <Session key="review" id="review" mode="review" helper={settings.helper} onRecorded={() => setProgress(loadProgress())} />}
+        {route.page === 'check' && <Session key={`check/${route.id}`} id={route.id!} mode="check" helper={settings.helper} onRecorded={() => setProgress(loadProgress())} />}
         {route.page === 'progress' && <ProgressScreen progress={progress} onChanged={() => setProgress(loadProgress())} />}
         {route.page === 'tables' && (route.id ? <TablesRound key={route.id} id={route.id} /> : <TablesMenu />)}
       </main>

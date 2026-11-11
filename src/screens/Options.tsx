@@ -1,4 +1,4 @@
-import { DEFAULTS, INKS, PAGES, SPOTS, type Settings, type TextSize } from '../theme';
+import { DEFAULTS, PAGES, SPOTS, type Settings, type TextSize } from '../theme';
 
 interface Props {
   settings: Settings;
@@ -53,36 +53,26 @@ export function Options({ settings, onChange }: Props) {
         </div>
         <div class="row">
           <span class="btn primary as-label">Check</span>
-          <span class="mark"><span class="tick done" aria-hidden="true" /> Correct</span>
+          <span class="mark"><span class="verdict yes small" aria-hidden="true">✓</span> Correct</span>
+          <span class="mark"><span class="verdict no small" aria-hidden="true">✕</span> Not quite</span>
         </div>
       </section>
 
       <section class="card">
         <h2>Colours</h2>
         <Swatches
-          label="Page"
+          label="Background"
           value={settings.page}
           choices={PAGES.map((p) => ({ id: p.id, name: p.name, colour: p.page }))}
           onPick={(id) => onChange({ page: id })}
         />
         <Swatches
-          label="Writing"
-          value={settings.ink}
-          choices={INKS.filter((i) => i.forDark === page.dark).map((i) => ({ id: i.id, name: i.name, colour: i.value }))}
-          onPick={(id) => onChange({ ink: id })}
+          label="Spot colour"
+          value={settings.spot}
+          choices={SPOTS.map((s) => ({ id: s.id, name: s.name, colour: spotColour(s) }))}
+          onPick={(id) => onChange({ spot: id })}
         />
-        <Swatches
-          label="Buttons"
-          value={settings.spot1}
-          choices={SPOTS.map((s) => ({ id: s.id, name: s.name, colour: spotColour(s), disabled: s.id === settings.spot2 }))}
-          onPick={(id) => onChange({ spot1: id })}
-        />
-        <Swatches
-          label="Ticks and progress"
-          value={settings.spot2}
-          choices={SPOTS.map((s) => ({ id: s.id, name: s.name, colour: spotColour(s), disabled: s.id === settings.spot1 }))}
-          onPick={(id) => onChange({ spot2: id })}
-        />
+        <p class="hint-text">Right answers are always green and wrong answers are always red.</p>
       </section>
 
       <section class="card">
@@ -115,6 +105,10 @@ export function Options({ settings, onChange }: Props) {
             onChange={(e) => onChange({ reduceMotion: e.currentTarget.checked })}
           />
           <span>Less movement</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" checked={settings.helper} onChange={(e) => onChange({ helper: e.currentTarget.checked })} />
+          <span>Alpaca helper</span>
         </label>
       </section>
 
