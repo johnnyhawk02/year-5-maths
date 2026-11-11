@@ -4,6 +4,7 @@ import { makeRng } from '../src/engine/rng';
 import { isCorrect, type Level, type Question } from '../src/engine/types';
 import { UNITS } from '../src/curriculum';
 import { additionWorking, subtractionWorking } from '../src/skills/add-subtract';
+import { divisionWorking, factorsOf, isPrime, shortMultiplicationWorking } from '../src/skills/multiply-divide';
 import { ALL_CONTENT } from '../src/skills';
 
 const parse = (s: string) => Number(s.replace(/,/g, '').replace('−', '-').replace('°C', ''));
@@ -21,14 +22,17 @@ function checkShape(q: Question) {
   for (const line of [q.prompt, q.show ?? '', ...q.explain]) expect(line).not.toMatch(/undefined|NaN|Infinity/);
   switch (q.kind) {
     case 'number':
-      expect(Number.isInteger(q.answer)).toBe(true);
-      expect(String(Math.abs(q.answer)).length).toBeLessThanOrEqual(7); // fits the number pad
+      if (q.decimal) expect(Math.abs(q.answer * 1000 - Math.round(q.answer * 1000))).toBeLessThan(1e-6); // at most 3 decimal places
+      else expect(Number.isInteger(q.answer)).toBe(true);
+      expect(String(Math.abs(q.answer)).replace('.', '').length).toBeLessThanOrEqual(7); // fits the number pad
+      expect(Number(String(q.answer))).toBe(q.answer); // typing the digits gives exactly this value
       if (q.answer < 0) expect(q.allowNegative).toBe(true);
       expect(isCorrect(q, q.answer)).toBe(true);
       expect(isCorrect(q, q.answer + 1)).toBe(false);
       break;
     case 'column': {
-      const total = q.op === '+' ? q.rows.reduce((a, b) => a + b, 0) : q.rows[0] - q.rows[1];
+      const total = q.op === '+' ? q.rows.reduce((a, b) => a + b, 0) : q.op === '-' ? q.rows[0] - q.rows[1] : q.rows[0] * q.rows[1];
+      if (q.workRows) expect(q.op).toBe('\u00d7');
       expect(q.answer).toBe(total);
       expect(q.answer).toBeGreaterThanOrEqual(0);
       expect(q.answer).toBeLessThan(1_000_000);
@@ -36,6 +40,17 @@ function checkShape(q: Question) {
       expect(q.explain[q.explain.length - 1]).toBe(`Answer: ${fmt(q.answer)}.`);
       break;
     }
+    case 'division':
+      expect(q.answer * q.divisor + q.remainder).toBe(q.dividend);
+      expect(q.remainder).toBeGreaterThanOrEqual(0);
+      expect(q.remainder).toBeLessThan(q.divisor);
+      expect(q.askRemainder).toBe(q.remainder > 0);
+      expect(q.divisor).toBeLessThan(10);
+      expect(q.explain[q.explain.length - 1]).toBe(`Answer: ${fmt(q.answer)}${q.remainder ? ` remainder ${q.remainder}` : ''}.`);
+      expect(isCorrect(q, { quotient: q.answer, remainder: q.remainder })).toBe(true);
+      expect(isCorrect(q, { quotient: q.answer + 1, remainder: q.remainder })).toBe(false);
+      if (q.askRemainder) expect(isCorrect(q, { quotient: q.answer, remainder: 0 })).toBe(false);
+      break;
     case 'choice':
       expect(q.options.length).toBeGreaterThanOrEqual(2);
       expect(new Set(q.options).size).toBe(q.options.length);
@@ -87,10 +102,10 @@ describe('helpers', () => {
 });
 
 describe('skill content', () => {
-  it('exists for every skill in units 1 and 2 and nowhere unknown', () => {
+  it('exists for every skill in units 1 to 3 and nowhere unknown', () => {
     const known = new Set(UNITS.flatMap((u) => u.skills.map((s) => s.id)));
     for (const c of ALL_CONTENT) expect(known.has(c.id)).toBe(true);
-    for (const u of UNITS.slice(0, 2)) for (const s of u.skills) expect(ALL_CONTENT.some((c) => c.id === s.id)).toBe(true);
+    for (const u of UNITS.slice(0, 3)) for (const s of u.skills) expect(ALL_CONTENT.some((c) => c.id === s.id)).toBe(true);
   });
 
   for (const content of ALL_CONTENT) {
@@ -311,6 +326,153 @@ describe('unit 2 answers are right', () => {
         if (q.prompt.startsWith('Two numbers add up')) {
           const n = nums(q.prompt);
           expect(q.answer + q.answer + n[1]).toBe(n[0]);
+        }
+      });
+    }
+  });
+});
+
+describe('unit 3 answers are right', () => {
+  const each = (id: string, fn: (q: Question) => void) => {
+    const c = ALL_CONTENT.find((x) => x.id === id)!;
+    for (const level of [1, 2, 3] as Level[]) for (let seed = 1; seed <= 3000; seed++) fn(c.generate(level, makeRng(seed)));
+  };
+  const ints = (s: string) => [...s.matchAll(/\d[\d,]*/g)].map((m) => parse(m[0]));
+  // Turns "6\u00b2 + 2\u00b3" or "? \u00d7 100 = 362" into something JavaScript can work out.
+  const value = (expr: string, missing?: number) =>
+    Function(
+      `return (${expr
+        .replace(/,/g, '')
+        .replace('?', String(missing))
+        .replace(/\u00d7/g, '*')
+        .replace(/\u00f7/g, '/')
+        .replace(/\u2212/g, '-')
+        .replace(/\u00b2/g, '**2')
+        .replace(/\u00b3/g, '**3')})`,
+    )() as number;
+  const close = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThan(1e-9);
+  const answerOf = (q: Question) => (q.kind === 'choice' ? parse(q.options[q.answer]) : (q as { answer: number }).answer);
+  const exactlyOne = (q: Question, test: (v: number) => boolean) => {
+    if (q.kind !== 'choice') throw new Error('expected a choice');
+    const hits = q.options.map((o) => test(parse(o)));
+    expect(hits.filter(Boolean).length).toBe(1);
+    expect(hits[q.answer]).toBe(true);
+  };
+  // Any question shown as an equation must balance once the answer is put in.
+  const balances = (q: Question) => {
+    if (!q.show || !q.show.includes('=')) return false;
+    const [left, right] = q.show.split('=');
+    close(value(left, answerOf(q)), value(right, answerOf(q)));
+    return true;
+  };
+
+  it('multiples and factors', () => {
+    each('multiply-divide-1', (q) => {
+      const n = ints(q.prompt);
+      if (balances(q)) return;
+      if (q.prompt.startsWith('Which number is a multiple')) exactlyOne(q, (v) => v % n[0] === 0);
+      else if (q.prompt.startsWith('Which number is a factor')) exactlyOne(q, (v) => n[0] % v === 0);
+      else if (q.prompt.startsWith('Which number is a common factor')) exactlyOne(q, (v) => n[0] % v === 0 && n[1] % v === 0);
+      else if (q.kind !== 'number') throw new Error('unexpected: ' + q.prompt);
+      else if (q.prompt.includes('multiple of both')) {
+        let m = 1;
+        while (m % n[0] || m % n[1]) m++;
+        expect(q.answer).toBe(m);
+      } else if (q.prompt.includes('factor of both')) expect(q.answer).toBe(Math.max(...factorsOf(n[0]).filter((d) => n[1] % d === 0)));
+      else if (q.prompt.startsWith('How many factors')) expect(q.answer).toBe(factorsOf(n[0]).length);
+      else if (q.prompt.includes('multiple of')) expect(q.answer).toBe(n[0] * n[1]);
+      else throw new Error('unexpected: ' + q.prompt);
+    });
+  });
+
+  it('prime numbers', () => {
+    expect([2, 3, 5, 7, 11, 13, 17, 19].every(isPrime)).toBe(true);
+    expect([1, 9, 15, 21, 51, 91].some(isPrime)).toBe(false);
+    each('multiply-divide-2', (q) => {
+      if (q.prompt === 'Which of these is a prime number?') exactlyOne(q, isPrime);
+      else if (q.prompt === 'Which of these is not a prime number?') exactlyOne(q, (v) => !isPrime(v));
+      else if (q.prompt.startsWith('Is ') && q.kind === 'choice') expect(q.answer).toBe(isPrime(ints(q.prompt)[0]) ? 0 : 1);
+      else if (q.prompt.startsWith('What is the next prime') && q.kind === 'number') {
+        const n = ints(q.prompt)[0];
+        expect(isPrime(q.answer)).toBe(true);
+        expect(q.answer).toBeGreaterThan(n);
+        for (let v = n + 1; v < q.answer; v++) expect(isPrime(v)).toBe(false);
+      } else if (q.prompt.includes('product of prime factors') && q.kind === 'choice') {
+        const n = ints(q.prompt)[0];
+        const good = q.options.map((o) => ints(o).every(isPrime) && ints(o).reduce((a, b) => a * b, 1) === n);
+        expect(good.filter(Boolean).length).toBe(1);
+        expect(good[q.answer]).toBe(true);
+      } else throw new Error('unexpected: ' + q.prompt);
+    });
+  });
+
+  it('squares and cubes', () => {
+    each('multiply-divide-3', (q) => {
+      const n = ints(q.prompt);
+      if (q.kind === 'choice') exactlyOne(q, (v) => Number.isInteger(Math.sqrt(v)));
+      else if (q.kind !== 'number') throw new Error('unexpected kind');
+      else if (q.show) expect(q.answer).toBe(value(q.show));
+      else if (q.prompt.includes('squared makes')) expect(q.answer ** 2).toBe(n[0]);
+      else if (q.prompt.includes('area of')) expect(q.answer ** 2).toBe(n[0]);
+      else if (q.prompt.includes('solid cube')) expect(q.answer).toBe(n[1] ** 3);
+      else throw new Error('unexpected: ' + q.prompt);
+    });
+  });
+
+  it('powers of ten and mental methods', () => {
+    for (const id of ['multiply-divide-4', 'multiply-divide-5']) {
+      each(id, (q) => {
+        if (balances(q)) return;
+        if (q.kind !== 'number') throw new Error('unexpected kind');
+        const expr = q.prompt.replace(/^.*?(?=\d)/, '');
+        close(q.answer, value(expr));
+        expect(q.answer).toBeGreaterThan(0);
+      });
+    }
+  });
+
+  it('written multiplication and division working', () => {
+    expect(shortMultiplicationWorking(2346, 7).at(-1)).toBe('Answer: 16,422.');
+    expect(divisionWorking(952, 4)).toEqual(['4 into 9 goes 2 with 1 left over. Carry the 1.', '4 into 15 goes 3 with 3 left over. Carry the 3.', '4 into 32 goes 8.', 'Answer: 238.']);
+    expect(divisionWorking(1236, 4).slice(0, 2)).toEqual(['4 into 1 does not go. Carry the 1.', '4 into 12 goes 3.']);
+    expect(divisionWorking(953, 4).at(-1)).toBe('Answer: 238 remainder 1.');
+    each('multiply-divide-6', (q) => {
+      if (q.kind !== 'column') throw new Error('unexpected kind');
+      expect(q.rows.length).toBe(2);
+      if (q.rows[1] < 10) {
+        // Rebuild the product from the digit each line writes down.
+        const lines = q.explain.slice(0, -1);
+        const built = lines.map((l, i) => { const v = Number(l.match(/= (\d+)\./)![1]); return i === lines.length - 1 ? String(v) : String(v % 10); }).reverse().join('');
+        expect(Number(built)).toBe(q.answer);
+      } else {
+        expect(q.workRows!.map((w) => value(w)).reduce((a, b) => a + b, 0)).toBe(q.answer);
+      }
+    });
+    each('multiply-divide-7', (q) => {
+      if (q.kind === 'division') {
+        // Rebuild the quotient from the "goes N" in each line.
+        const built = q.explain.slice(0, -1).map((l) => (l.includes('does not go') ? '0' : l.match(/goes (\d)/)![1])).join('');
+        expect(Number(built)).toBe(q.answer);
+      } else if (q.kind === 'number') {
+        const n = ints(q.prompt);
+        const total = Math.max(n[0], n[1]), size = Math.min(n[0], n[1]);
+        const want = q.prompt.includes('minibuses') ? Math.ceil(total / size) : q.prompt.includes('left over') ? total % size : Math.floor(total / size);
+        expect(q.answer).toBe(want);
+      } else throw new Error('unexpected kind');
+    });
+  });
+
+  it('problems end on the stated answer', () => {
+    for (const id of ['multiply-divide-8', 'multiply-divide-9']) {
+      each(id, (q) => {
+        if (q.kind !== 'number') throw new Error('unexpected kind');
+        expect(q.answer).toBeGreaterThan(0);
+        expect(Number.isInteger(q.answer)).toBe(true);
+        expect(q.explain.at(-1)).toContain(fmt(q.answer));
+        balances(q);
+        // Every line of working that is a sum must be true.
+        for (const line of q.explain) {
+          for (const m of line.matchAll(/([\d,]+(?:\u00b2)?(?: [+\u2212\u00d7\u00f7] [\d,]+)+) = ([\d,]+)/g)) close(value(m[1]), parse(m[2]));
         }
       });
     }
