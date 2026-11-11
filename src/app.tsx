@@ -9,10 +9,11 @@ import { InstallGuide } from './screens/InstallGuide';
 import { SkillScreen } from './screens/Skill';
 import { Learn } from './screens/Learn';
 import { Session } from './screens/Session';
+import { TablesMenu, TablesRound } from './screens/Tables';
 import { loadProgress } from './progress';
 
 type Tab = 'home' | 'map' | 'options';
-type Page = Tab | 'skill' | 'learn' | 'try' | 'practise';
+type Page = Tab | 'skill' | 'learn' | 'try' | 'practise' | 'tables';
 interface Route { page: Page; id?: string }
 const TABS: Tab[] = ['home', 'map', 'options'];
 const WITH_ID: Page[] = ['skill', 'learn', 'try', 'practise'];
@@ -22,6 +23,7 @@ const readRoute = (): Route => {
   const [page, id] = location.hash.replace(/^#\/?/, '').split('/') as [Page, string | undefined];
   if ((TABS as Page[]).includes(page)) return { page };
   if (WITH_ID.includes(page) && id) return { page, id };
+  if (page === 'tables') return { page, id };
   return { page: 'home' };
 };
 
@@ -77,8 +79,8 @@ export function App() {
     );
   }
 
-  // Lesson pages sit under the Map tab.
-  const tab: Tab = (TABS as Page[]).includes(route.page) ? (route.page as Tab) : 'map';
+  // Lesson pages sit under the Map tab. Times tables are reached from Home.
+  const tab: Tab = (TABS as Page[]).includes(route.page) ? (route.page as Tab) : route.page === 'tables' ? 'home' : 'map';
 
   return (
     <div class="shell">
@@ -114,6 +116,7 @@ export function App() {
         {(route.page === 'try' || route.page === 'practise') && (
           <Session key={`${route.page}/${route.id}`} id={route.id!} mode={route.page} onRecorded={() => setProgress(loadProgress())} />
         )}
+        {route.page === 'tables' && (route.id ? <TablesRound key={route.id} id={route.id} /> : <TablesMenu />)}
       </main>
     </div>
   );

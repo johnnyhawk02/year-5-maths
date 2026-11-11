@@ -29,6 +29,12 @@ export function Home({ progress }: { progress: Progress }) {
         )}
       </section>
       <section class="card">
+        <p class="eyebrow">Quick practice</p>
+        <h2>Times tables</h2>
+        <p>Twelve quick questions on any table up to 12 × 12.</p>
+        <div class="row"><a class="btn" href="#/tables">Practise times tables</a></div>
+      </section>
+      <section class="card">
         <p class="eyebrow">Your year</p>
         <div class="meter" role="img" aria-label={`${ticked} of ${SKILL_COUNT} skills ticked`}>
           <div class="meter-fill" style={{ width: `${(ticked / SKILL_COUNT) * 100}%` }} />

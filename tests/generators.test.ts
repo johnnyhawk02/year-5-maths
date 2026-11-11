@@ -6,6 +6,7 @@ import { UNITS } from '../src/curriculum';
 import { additionWorking, subtractionWorking } from '../src/skills/add-subtract';
 import { divisionWorking, factorsOf, isPrime, shortMultiplicationWorking } from '../src/skills/multiply-divide';
 import { ALL_CONTENT } from '../src/skills';
+import { MIXED, ROUND_SIZE, TABLES, clock, isTableKey, makeRound } from '../src/tables';
 
 const parse = (s: string): number => {
   // Fractions are written {3/4} or {2 3/4}.
@@ -762,5 +763,58 @@ describe('unit 5 answers are right', () => {
         parts.forEach((p) => close(p, parts[0]));
       }
     });
+  });
+});
+
+describe('times tables', () => {
+  const work = (text: string) => {
+    const [a, op, b] = text.split(' ');
+    return op === '×' ? Number(a) * Number(b) : Number(a) / Number(b);
+  };
+  it('gives every fact of one table once', () => {
+    for (const n of TABLES) for (const division of [true, false]) for (let seed = 1; seed <= 300; seed++) {
+      const round = makeRound(String(n), division, makeRng(seed));
+      expect(round.length).toBe(ROUND_SIZE);
+      const others: number[] = [];
+      for (const f of round) {
+        expect(work(f.text)).toBe(f.answer);
+        expect(f.full).toBe(`${f.text} = ${f.answer}`);
+        if (!division) expect(f.text).toContain('×');
+        const [a, op, b] = f.text.split(' ');
+        if (op === '×') {
+          expect([Number(a), Number(b)]).toContain(n);
+          others.push(Number(a) === n ? Number(b) : Number(a));
+        } else {
+          expect(Number(b)).toBe(n);
+          others.push(f.answer);
+        }
+      }
+      expect(others.sort((x, y) => x - y)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    }
+  });
+  it('gives twelve different mixed facts', () => {
+    let divisions = 0;
+    for (let seed = 1; seed <= 1000; seed++) {
+      const round = makeRound(MIXED, true, makeRng(seed));
+      expect(round.length).toBe(ROUND_SIZE);
+      const ids = round.map((f) => {
+        expect(work(f.text)).toBe(f.answer);
+        const [a, op, b] = f.text.split(' ').map((v, i) => (i === 1 ? v : Number(v))) as [number, string, number];
+        if (op === '÷') divisions++;
+        const pair = op === '×' ? [a, b] : [b, f.answer];
+        pair.forEach((v) => { expect(v).toBeGreaterThanOrEqual(2); expect(v).toBeLessThanOrEqual(12); });
+        return pair.sort((x, y) => x - y).join(',');
+      });
+      expect(new Set(ids).size).toBe(ROUND_SIZE);
+    }
+    expect(divisions).toBeGreaterThan(3000);
+  });
+  it('knows its table names and shows times', () => {
+    expect(isTableKey('7')).toBe(true);
+    expect(isTableKey('mixed')).toBe(true);
+    expect(isTableKey('13')).toBe(false);
+    expect(isTableKey('1')).toBe(false);
+    expect(clock(75)).toBe('1:15');
+    expect(clock(9)).toBe('0:09');
   });
 });

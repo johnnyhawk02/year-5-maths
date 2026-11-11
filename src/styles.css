@@ -446,3 +446,22 @@ button { font: inherit; color: inherit; }
   .frac-box { height: 54px; }
   .frac-entry ~ .pad .key { min-height: 54px; }
 }
+
+/* Times tables */
+.table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.table-btn {
+  min-height: 96px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  background: var(--panel); border: 2px solid var(--line); border-radius: 14px; color: var(--ink); text-decoration: none;
+}
+.table-btn:active { border-color: var(--spot1); }
+.table-btn.mixed { border-color: var(--ink); }
+.table-name { font-size: 1.5rem; font-weight: 700; }
+.table-best { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem; color: var(--faint); }
+.dots { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); list-style: none; }
+.dot.now { border-color: var(--ink); }
+.dot.yes { background: var(--spot2); border-color: var(--spot2); }
+.dot.no { background: var(--ink); border-color: var(--ink); }
+.show.fact { font-size: 3rem; }
+.fact-list { display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 1.3rem; font-weight: 600; }
+.fact-list li { list-style: none; }
