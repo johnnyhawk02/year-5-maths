@@ -2,7 +2,7 @@
 
 A maths teaching app for UK Year 5 (ages 9 to 10). It installs to the iPad Home Screen and works offline.
 
-Phase 0 is the shell: install guide, Home, Map of the 8 units, and Options with colour choices. Units 1 (Number and place value), 2 (Addition and subtraction), 3 (Multiplication and division), 4 (Fractions), 5 (Decimals and percentages) and 6 (Measurement) have worked examples and generated practice questions. Times tables practice (2 to 12 and mixed, with optional division facts and stopwatch) is reached from Home.
+Phase 0 is the shell: install guide, Home, Map of the 8 units, and Options with colour choices. Units 1 (Number and place value), 2 (Addition and subtraction), 3 (Multiplication and division), 4 (Fractions), 5 (Decimals and percentages), 6 (Measurement) and 7 (Geometry) have worked examples and generated practice questions. Times tables practice (2 to 12 and mixed, with optional division facts and stopwatch) is reached from Home.
 
 ## Develop
 
