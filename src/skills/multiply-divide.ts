@@ -1,4 +1,5 @@
 // Unit 3: Multiplication and division. All wording and questions are our own.
+import { barModel, dotArray, numberLine, placeChart } from '../engine/pictures';
 import { divisionPicture, longMultiplicationPicture, shortMultiplicationPicture } from '../engine/written';
 import { fmt } from '../engine/format';
 import type { Rng } from '../engine/rng';
@@ -137,10 +138,10 @@ function smallestCommonMultiple(r: Rng): Question {
 const multiplesAndFactors: SkillContent = {
   id: 'multiply-divide-1',
   example: [
-    { say: 'A multiple is what you get when you multiply a number by a whole number. They are the times table answers.', show: `Multiples of 6:  6, 12, 18, 24, 30 ...` },
-    { say: 'A factor is a number that divides in exactly. Factors come in pairs that multiply to make the number.', show: `24 = 1 ${X} 24 = 2 ${X} 12 = 3 ${X} 8 = 4 ${X} 6` },
-    { say: 'To find every factor, try 1, 2, 3 and so on. Stop when the pairs start to repeat.', show: 'Factors of 24:  1, 2, 3, 4, 6, 8, 12, 24' },
-    { say: 'A common factor is a factor of two numbers at once. 6 is a common factor of 24 and 30.', show: `24 ${DIV} 6 = 4     30 ${DIV} 6 = 5` },
+    { say: 'A multiple is what you get when you multiply a number by a whole number. They are the times table answers.', show: `Multiples of 6:  6, 12, 18, 24, 30 ...`, pics: [numberLine(0, 30, 1, [0, 6, 12, 18, 24, 30], { jumps: [[0, 6, '+6'], [6, 12, '+6'], [12, 18, '+6'], [18, 24, '+6'], [24, 30, '+6']] })] },
+    { say: 'A factor is a number that divides in exactly. Factors come in pairs that multiply to make the number.', show: `24 = 1 ${X} 24 = 2 ${X} 12 = 3 ${X} 8 = 4 ${X} 6`, pics: [dotArray(4, 6, '4 rows of 6 make 24, so 4 and 6 are factors of 24')] },
+    { say: 'To find every factor, try 1, 2, 3 and so on. Stop when the pairs start to repeat.', show: 'Factors of 24:  1, 2, 3, 4, 6, 8, 12, 24', pics: [dotArray(2, 12, '2 rows of 12'), dotArray(3, 8, '3 rows of 8'), dotArray(4, 6, '4 rows of 6')] },
+    { say: 'A common factor is a factor of two numbers at once. 6 is a common factor of 24 and 30.', show: `24 ${DIV} 6 = 4     30 ${DIV} 6 = 5`, pics: [barModel([[['6', 1], ['6', 1], ['6', 1], ['6', 1]], [['6', 1], ['6', 1], ['6', 1], ['6', 1], ['6', 1]]], '24 split into four 6s and 30 split into five 6s', '24 is four 6s. 30 is five 6s.')] },
   ],
   generate(level, r) {
     if (level === 1) return r.pick([() => multipleChoice(r), () => nthMultiple(r), () => factorChoice(r)])();
@@ -232,10 +233,10 @@ function primeFactorChoice(r: Rng): Question {
 const primes: SkillContent = {
   id: 'multiply-divide-2',
   example: [
-    { say: 'A prime number has exactly two factors: 1 and itself.', show: '2, 3, 5, 7, 11, 13, 17, 19 ...' },
-    { say: 'A number with more than two factors is called composite. 1 is neither, because it has only one factor.', show: `15 = 3 ${X} 5, so 15 is composite` },
-    { say: 'To test a number up to 100, try dividing by 2, 3, 5 and 7. If none of them work, it is prime.', show: `91 = 7 ${X} 13, so 91 is not prime` },
-    { say: 'Any composite number can be broken down into prime factors.', show: `30 = 2 ${X} 3 ${X} 5` },
+    { say: 'A prime number has exactly two factors: 1 and itself.', show: '2, 3, 5, 7, 11, 13, 17, 19 ...', pics: [dotArray(1, 7, '7 dots only fit in one row, so 7 is prime')] },
+    { say: 'A number with more than two factors is called composite. 1 is neither, because it has only one factor.', show: `15 = 3 ${X} 5, so 15 is composite`, pics: [dotArray(3, 5, '15 dots make 3 rows of 5, so 15 is composite')] },
+    { say: 'To test a number up to 100, try dividing by 2, 3, 5 and 7. If none of them work, it is prime.', show: `91 = 7 ${X} 13, so 91 is not prime`, pics: [dotArray(7, 13, '91 dots make 7 rows of 13')] },
+    { say: 'Any composite number can be broken down into prime factors.', show: `30 = 2 ${X} 3 ${X} 5`, pics: [barModel([[['30', 6]], [['2', 2], ['15', 4]], [['2', 2], ['3', 2], ['5', 2]]], '30 split into 2 and 15, then 15 split into 3 and 5')] },
   ],
   generate(level, r) {
     if (level === 1) return primeChoice(r, 30);
@@ -293,10 +294,10 @@ function squaresAndCubes(r: Rng, level: number): Question {
 const squaresCubes: SkillContent = {
   id: 'multiply-divide-3',
   example: [
-    { say: 'A square number is a number multiplied by itself. The small 2 means "squared".', show: `5${SQ} = 5 ${X} 5 = 25` },
-    { say: 'It is called square because that many dots make a square: 5 rows of 5.' },
-    { say: 'A cube number is a number multiplied by itself, and by itself again. The small 3 means "cubed".', show: `4${CU} = 4 ${X} 4 ${X} 4 = 64` },
-    { say: 'Work a cube out in two steps.', show: `4 ${X} 4 = 16,   16 ${X} 4 = 64` },
+    { say: 'A square number is a number multiplied by itself. The small 2 means "squared".', show: `5${SQ} = 5 ${X} 5 = 25`, pics: [dotArray(5, 5, '5 rows of 5')] },
+    { say: 'It is called square because that many dots make a square: 5 rows of 5.', pics: [dotArray(3, 3, '3 squared is 9'), dotArray(4, 4, '4 squared is 16'), dotArray(5, 5, '5 squared is 25')] },
+    { say: 'A cube number is a number multiplied by itself, and by itself again. The small 3 means "cubed".', show: `4${CU} = 4 ${X} 4 ${X} 4 = 64`, pics: [dotArray(4, 4, '4 layers, each with 4 rows of 4', 4)] },
+    { say: 'Work a cube out in two steps.', show: `4 ${X} 4 = 16,   16 ${X} 4 = 64`, pics: [barModel([[['16', 1], ['16', 1], ['16', 1], ['16', 1]], [['64', 4, true]]], 'Four lots of 16 make 64')] },
   ],
   generate: (level, r) => squaresAndCubes(r, level),
 };
@@ -348,10 +349,10 @@ function powerOfTen(r: Rng, level: number): Question {
 const powersOfTen: SkillContent = {
   id: 'multiply-divide-4',
   example: [
-    { say: 'Multiplying by 10 makes every digit worth ten times as much, so each digit moves one place to the left.', show: `36 ${X} 10 = 360` },
-    { say: 'By 100 they move two places. By 1,000 they move three.', show: `36 ${X} 1,000 = 36,000` },
-    { say: 'Dividing moves the digits to the right instead.', show: `4,500 ${DIV} 100 = 45` },
-    { say: 'It works for decimals too. The digits move, and the decimal point stays where it is.', show: `3.47 ${X} 100 = 347       52.6 ${DIV} 10 = 5.26` },
+    { say: 'Multiplying by 10 makes every digit worth ten times as much, so each digit moves one place to the left.', show: `36 ${X} 10 = 360`, pics: [placeChart(['36', '360'], { caption: 'Each digit moves one place to the left. A zero fills the empty ones place.' })] },
+    { say: 'By 100 they move two places. By 1,000 they move three.', show: `36 ${X} 1,000 = 36,000`, pics: [placeChart(['36', '36000'], { caption: 'Three places to the left' })] },
+    { say: 'Dividing moves the digits to the right instead.', show: `4,500 ${DIV} 100 = 45`, pics: [placeChart(['4500', '45'], { caption: 'Two places to the right' })] },
+    { say: 'It works for decimals too. The digits move, and the decimal point stays where it is.', show: `3.47 ${X} 100 = 347       52.6 ${DIV} 10 = 5.26`, pics: [placeChart(['3.47', '347'], { caption: 'Two places to the left' })] },
   ],
   generate: (level, r) => powerOfTen(r, level),
 };
@@ -407,10 +408,10 @@ function mental(r: Rng, level: number): Question {
 const mentalMethods: SkillContent = {
   id: 'multiply-divide-5',
   example: [
-    { say: 'Times table facts unlock much bigger sums.', show: `4 ${X} 6 = 24   so   400 ${X} 6 = 2,400` },
-    { say: 'Split a number into tens and ones, multiply each part, then add.', show: `23 ${X} 4 = 80 + 12 = 92` },
-    { say: 'Use doubling and halving. Times 4 is double, then double again. Times 5 is times 10, then halve.', show: `36 ${X} 5 = 360 ${DIV} 2 = 180` },
-    { say: 'Division facts stretch the same way.', show: `35 ${DIV} 7 = 5   so   3,500 ${DIV} 7 = 500` },
+    { say: 'Times table facts unlock much bigger sums.', show: `4 ${X} 6 = 24   so   400 ${X} 6 = 2,400`, pics: [barModel([[['4', 1], ['4', 1], ['4', 1], ['4', 1], ['4', 1], ['4', 1]], [['400', 1], ['400', 1], ['400', 1], ['400', 1], ['400', 1], ['400', 1]]], 'Six 4s and six 400s', 'Six 4s make 24. Six 400s make 2,400.')] },
+    { say: 'Split a number into tens and ones, multiply each part, then add.', show: `23 ${X} 4 = 80 + 12 = 92`, pics: [barModel([[[`20 ${X} 4 = 80`, 20], [`3 ${X} 4 = 12`, 8]], [['92', 28, true]]], '23 times 4 split into 20 times 4 and 3 times 4')] },
+    { say: 'Use doubling and halving. Times 4 is double, then double again. Times 5 is times 10, then halve.', show: `36 ${X} 5 = 360 ${DIV} 2 = 180`, pics: [barModel([[[`36 ${X} 10 = 360`, 360]], [['180', 180, true], ['180', 180]]], '360 split into two halves of 180')] },
+    { say: 'Division facts stretch the same way.', show: `35 ${DIV} 7 = 5   so   3,500 ${DIV} 7 = 500`, pics: [barModel([[['3,500', 7]], [['500', 1], ['500', 1], ['500', 1], ['500', 1], ['500', 1], ['500', 1], ['500', 1]]], '3,500 split into seven 500s')] },
   ],
   generate: (level, r) => mental(r, level),
 };
@@ -597,10 +598,10 @@ function mixed(r: Rng, level: number): Question {
 const mixedProblems: SkillContent = {
   id: 'multiply-divide-8',
   example: [
-    { say: 'Some problems need more than one kind of sum. Read it through and plan the steps.', show: 'Pens come in packs of 12. A school buys 25 packs and gives out 180 pens. How many are left?' },
-    { say: 'Step one: how many pens were bought?', show: `25 ${X} 12 = 300` },
-    { say: 'Step two: take away the pens given out.', show: `300 ${MINUS} 180 = 120` },
-    { say: 'The equals sign means "is the same as". Both sides must have the same value.', show: `6 ${X} 8 = ? + 30   so   ? = 18` },
+    { say: 'Some problems need more than one kind of sum. Read it through and plan the steps.', show: 'Pens come in packs of 12. A school buys 25 packs and gives out 180 pens. How many are left?', pics: [barModel([[['25 packs of 12 pens', 300]], [['180 given out', 180], ['? left', 120, true]]], 'All the pens, split into 180 given out and the pens left')] },
+    { say: 'Step one: how many pens were bought?', show: `25 ${X} 12 = 300`, pics: [barModel([[['25 packs of 12 = 300 pens', 300, true]]], '25 packs of 12 make 300 pens')] },
+    { say: 'Step two: take away the pens given out.', show: `300 ${MINUS} 180 = 120`, pics: [barModel([[['300', 300]], [['180', 180], ['120', 120, true]]], '300 split into 180 and 120')] },
+    { say: 'The equals sign means "is the same as". Both sides must have the same value.', show: `6 ${X} 8 = ? + 30   so   ? = 18`, pics: [barModel([[[`6 ${X} 8 = 48`, 48]], [['? = 18', 18, true], ['30', 30]]], 'A bar of 48 matched by a bar of 18 and 30')] },
   ],
   generate: (level, r) => mixed(r, level),
 };
@@ -657,10 +658,10 @@ function scaling(r: Rng, level: number): Question {
 const scalingRates: SkillContent = {
   id: 'multiply-divide-9',
   example: [
-    { say: 'Scaling means making everything bigger or smaller by the same number of times.', show: 'A recipe for 4 people uses 300 g of flour' },
-    { say: 'For 12 people you need 3 times as many portions, so use 3 times as much of everything.', show: `300 ${X} 3 = 900 g` },
-    { say: 'Scaling down by a fraction means dividing. A model that is 1/10 of the size has every length divided by 10.', show: `350 cm ${DIV} 10 = 35 cm` },
-    { say: 'A rate tells you how much for each one. If 4 apples cost 180p, find one apple first, then as many as you need.', show: `180 ${DIV} 4 = 45p     45 ${X} 10 = 450p` },
+    { say: 'Scaling means making everything bigger or smaller by the same number of times.', show: 'A recipe for 4 people uses 300 g of flour', pics: [barModel([[['300 g for 4 people', 1]]], 'One bar for 300 g of flour')] },
+    { say: 'For 12 people you need 3 times as many portions, so use 3 times as much of everything.', show: `300 ${X} 3 = 900 g`, pics: [barModel([[['300 g', 1]], [['300 g', 1], ['300 g', 1], ['300 g', 1]]], 'One bar of 300 g, then three of them in a row', '3 times as much is 900 g')] },
+    { say: 'Scaling down by a fraction means dividing. A model that is 1/10 of the size has every length divided by 10.', show: `350 cm ${DIV} 10 = 35 cm`, pics: [barModel([[['350 cm', 10]], [['35', 1, true], ['35', 1], ['35', 1], ['35', 1], ['35', 1], ['35', 1], ['35', 1], ['35', 1], ['35', 1], ['35', 1]]], '350 cm split into ten parts of 35 cm')] },
+    { say: 'A rate tells you how much for each one. If 4 apples cost 180p, find one apple first, then as many as you need.', show: `180 ${DIV} 4 = 45p     45 ${X} 10 = 450p`, pics: [barModel([[['180p for 4 apples', 4]], [['45p', 1, true], ['45p', 1], ['45p', 1], ['45p', 1]]], '180p split into four parts of 45p')] },
   ],
   generate: (level, r) => scaling(r, level),
 };

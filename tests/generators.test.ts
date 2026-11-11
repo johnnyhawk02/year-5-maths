@@ -918,3 +918,28 @@ describe('written method pictures', () => {
     }
   });
 });
+
+describe('worked examples are shown, not just told', () => {
+  it('every step of every worked example has a picture', () => {
+    const bare: string[] = [];
+    for (const c of ALL_CONTENT) c.example.forEach((s, i) => { if (!s.written && !s.pics?.length && !s.bars?.length) bare.push(`${c.id} step ${i + 1}`); });
+    expect(bare).toEqual([]);
+  });
+  it('pictures are well formed', () => {
+    for (const c of ALL_CONTENT) for (const s of c.example) for (const p of s.pics ?? []) {
+      expect(p.alt.length).toBeGreaterThan(0);
+      if (p.kind === 'chart') { p.rows.forEach((r) => expect(r.length).toBe(p.headers.length)); p.hi?.forEach((i) => expect(i).toBeLessThan(p.headers.length)); }
+      if (p.kind === 'line') {
+        expect(p.max).toBeGreaterThan(p.min);
+        for (const v of [...p.labels.map((l) => l.at), ...(p.points ?? []).map((x) => x.at), ...(p.jumps ?? []).flatMap((j) => [j.from, j.to])]) {
+          expect(v).toBeGreaterThanOrEqual(p.min);
+          expect(v).toBeLessThanOrEqual(p.max);
+        }
+        expect((p.max - p.min) / p.step).toBeLessThanOrEqual(40);
+      }
+      if (p.kind === 'model') p.rows.forEach((r) => r.forEach((part) => expect(part.size).toBeGreaterThan(0)));
+      if (p.kind === 'array') expect(p.rows * p.cols * (p.copies ?? 1)).toBeLessThanOrEqual(100);
+      if (p.kind === 'grid') { expect(p.shaded).toBeGreaterThanOrEqual(0); expect(p.shaded).toBeLessThanOrEqual(100); }
+    }
+  });
+});

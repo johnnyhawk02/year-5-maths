@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { getSkillContent } from '../skills';
 import { FractionBars } from '../inputs/FractionBars';
+import { PictureView } from '../inputs/PictureView';
 import { Rich } from '../inputs/Rich';
 import { WrittenPicture } from '../inputs/WrittenPicture';
 import { findSkill } from './Skill';
@@ -22,6 +23,7 @@ export function Learn({ id }: { id: string }) {
             <p><Rich text={s.say} /></p>
             {s.show && <p class="show"><Rich text={s.show} /></p>}
             {s.written && <WrittenPicture picture={s.written} />}
+            {s.pics?.map((p, pi) => <PictureView key={pi} picture={p} />)}
             {s.bars && <FractionBars bars={s.bars} />}
           </li>
         ))}

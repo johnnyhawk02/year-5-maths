@@ -22,6 +22,7 @@ npm test          # check every question generator
 - `src/screens/` holds one file per screen.
 - `src/skills/` holds the worked examples and question generators, one file per unit.
 - `src/engine/` holds the question types, number formatting and the seeded random numbers.
+- `src/engine/written.ts` and `src/engine/pictures.ts` describe the pictures used in worked examples: written methods drawn as on paper, place value charts, number lines, bar models, dot arrays and hundred squares. Every step of every worked example must have a picture, and a test checks this.
 - `src/inputs/` holds the number pad, choices, ordering cards, number line, column layout, short division layout, fraction boxes and fraction bars.
 - `vite.config.ts` holds the web app manifest and offline settings.
 

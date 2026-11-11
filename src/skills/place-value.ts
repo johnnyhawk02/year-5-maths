@@ -1,4 +1,5 @@
 // Unit 1: Number and place value. All wording and questions are our own.
+import { numberLine, placeChart, table } from '../engine/pictures';
 import { fmt, PLACES, romanParts, roundTo, toRoman, toWords } from '../engine/format';
 import type { Rng } from '../engine/rng';
 import type { Level, Question, SkillContent } from '../engine/types';
@@ -154,10 +155,10 @@ function digitCards(r: Rng): Question {
 const numbersToMillion: SkillContent = {
   id: 'place-value-1',
   example: [
-    { say: 'Every digit in a number has a place, and the place tells you what it is worth.', show: '472,318' },
-    { say: 'From the right the places are ones, tens, hundreds, thousands, ten thousands and hundred thousands.' },
-    { say: 'The 7 is in the ten thousands place, so it is worth 70,000.', show: '7 ten thousands = 70,000' },
-    { say: 'To compare two numbers, look at the digits from the left. The first place where they differ decides it.', show: '472,318  >  469,950' },
+    { say: 'Every digit in a number has a place, and the place tells you what it is worth.', show: '472,318', pics: [placeChart(['472318'])] },
+    { say: 'From the right the places are ones, tens, hundreds, thousands, ten thousands and hundred thousands.', pics: [placeChart(['472318'], { caption: 'O ones, T tens, H hundreds, Th thousands, TTh ten thousands, HTh hundred thousands' })] },
+    { say: 'The 7 is in the ten thousands place, so it is worth 70,000.', show: '7 ten thousands = 70,000', pics: [placeChart(['472318'], { hi: ['TTh'] })] },
+    { say: 'To compare two numbers, look at the digits from the left. The first place where they differ decides it.', show: '472,318  >  469,950', pics: [placeChart(['472318', '469950'], { hi: ['TTh'], caption: 'The hundred thousands match. In the ten thousands, 7 is more than 6.' })] },
   ],
   generate(level, r) {
     if (level === 1) return r.pick([() => digitValue(r, r.int(4, 5)), () => compare(r, 5)])();
@@ -238,10 +239,10 @@ function sequence(r: Rng, steps: number[], level: Level): Question {
 const countingInPowers: SkillContent = {
   id: 'place-value-2',
   example: [
-    { say: 'Counting in 10s, 100s or 1,000s changes just one digit at a time.', show: '45,320' },
-    { say: 'To find 1,000 more, add one to the thousands digit.', show: '45,320  →  46,320' },
-    { say: 'Watch out when the digit is a 9. It goes to 0 and the next place goes up by one.', show: '49,320  →  50,320' },
-    { say: 'Counting back works the same way. A 0 becomes 9 and the next place goes down by one.', show: '50,320  →  49,320' },
+    { say: 'Counting in 10s, 100s or 1,000s changes just one digit at a time.', show: '45,320', pics: [placeChart(['45320'])] },
+    { say: 'To find 1,000 more, add one to the thousands digit.', show: '45,320  →  46,320', pics: [placeChart(['45320', '46320'], { hi: ['Th'] })] },
+    { say: 'Watch out when the digit is a 9. It goes to 0 and the next place goes up by one.', show: '49,320  →  50,320', pics: [placeChart(['49320', '50320'], { hi: ['TTh', 'Th'] })] },
+    { say: 'Counting back works the same way. A 0 becomes 9 and the next place goes down by one.', show: '50,320  →  49,320', pics: [placeChart(['50320', '49320'], { hi: ['TTh', 'Th'] })] },
   ],
   generate(level, r) {
     if (level === 1) return r.pick([() => moreLess(r, [10, 100, 1000], false), () => sequence(r, [10, 100, 1000], 1)])();
@@ -392,10 +393,10 @@ function sequenceThroughZero(r: Rng): Question {
 const negativeNumbers: SkillContent = {
   id: 'place-value-3',
   example: [
-    { say: 'Numbers do not stop at zero. Below zero they are negative, and we write a minus sign in front.', show: '−3   −2   −1   0   1   2   3' },
-    { say: 'Temperatures use them. If it is 2°C and it gets 5 degrees colder, count back 5.', show: '2  →  1,  0,  −1,  −2,  −3' },
-    { say: 'A quick way is to split the jump at zero. Two to reach 0, then three more.', show: '2 − 2 = 0,   0 − 3 = −3' },
-    { say: 'Further left is smaller, so −8 is smaller than −3.', show: '−8  <  −3' },
+    { say: 'Numbers do not stop at zero. Below zero they are negative, and we write a minus sign in front.', show: '−3   −2   −1   0   1   2   3', pics: [numberLine(-5, 5, 1, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5])] },
+    { say: 'Temperatures use them. If it is 2°C and it gets 5 degrees colder, count back 5.', show: '2  →  1,  0,  −1,  −2,  −3', pics: [numberLine(-5, 5, 1, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], { jumps: [[2, 1], [1, 0], [0, -1], [-1, -2], [-2, -3]] })] },
+    { say: 'A quick way is to split the jump at zero. Two to reach 0, then three more.', show: '2 − 2 = 0,   0 − 3 = −3', pics: [numberLine(-5, 5, 1, [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5], { jumps: [[2, 0, '−2'], [0, -3, '−3']] })] },
+    { say: 'Further left is smaller, so −8 is smaller than −3.', show: '−8  <  −3', pics: [numberLine(-10, 0, 1, [-10, -5, 0], { points: [-8, -3] })] },
   ],
   generate(level, r) {
     if (level === 1) return r.pick([() => placeOnLine(r), () => temperatureFall(r), () => colder(r)])();
@@ -469,10 +470,10 @@ function whichRounds(r: Rng): Question {
 const rounding: SkillContent = {
   id: 'place-value-4',
   example: [
-    { say: 'Rounding gives a nearby number that is easier to work with.', show: '4,372' },
-    { say: 'To round to the nearest 100, find the hundreds either side.', show: '4,300   and   4,400' },
-    { say: 'Look at the digit one place to the right, the tens. It is 7.', show: '4,3 7 2' },
-    { say: '5 or more rounds up. 4 or less rounds down. So 4,372 rounds up.', show: '4,372  →  4,400' },
+    { say: 'Rounding gives a nearby number that is easier to work with.', show: '4,372', pics: [numberLine(4000, 5000, 100, [4000, 4500, 5000], { points: [4372] })] },
+    { say: 'To round to the nearest 100, find the hundreds either side.', show: '4,300   and   4,400', pics: [numberLine(4300, 4400, 10, [4300, 4350, 4400], { points: [4372] })] },
+    { say: 'Look at the digit one place to the right, the tens. It is 7.', show: '4,3 7 2', pics: [placeChart(['4372'], { hi: ['T'] })] },
+    { say: '5 or more rounds up. 4 or less rounds down. So 4,372 rounds up.', show: '4,372  →  4,400', pics: [numberLine(4300, 4400, 10, [4300, 4350, 4400], { points: [4372], jumps: [[4372, 4400]] })] },
   ],
   generate(level, r) {
     if (level === 1) return roundNumber(r, [4, 5], [10, 100, 1000]);
@@ -517,10 +518,10 @@ function pickRoman(r: Rng, min: number, max: number, year: boolean): Question {
 const romanNumerals: SkillContent = {
   id: 'place-value-5',
   example: [
-    { say: 'Roman numerals use seven letters.', show: 'I = 1   V = 5   X = 10   L = 50   C = 100   D = 500   M = 1,000' },
-    { say: 'Usually you read left to right and add.', show: 'CLXVI = 100 + 50 + 10 + 5 + 1 = 166' },
-    { say: 'A smaller letter in front of a bigger one is taken away.', show: 'IV = 4   IX = 9   XL = 40   XC = 90   CD = 400   CM = 900' },
-    { say: 'Years are read the same way, in parts.', show: 'MCMXCVIII = 1,000 + 900 + 90 + 8 = 1998' },
+    { say: 'Roman numerals use seven letters.', show: 'I = 1   V = 5   X = 10   L = 50   C = 100   D = 500   M = 1,000', pics: [table(['I', 'V', 'X', 'L', 'C', 'D', 'M'], ['1', '5', '10', '50', '100', '500', '1,000'], 'The seven Roman numeral letters and their values')] },
+    { say: 'Usually you read left to right and add.', show: 'CLXVI = 100 + 50 + 10 + 5 + 1 = 166', pics: [table(['C', 'L', 'X', 'V', 'I'], ['100', '50', '10', '5', '1'], 'CLXVI split into its letters')] },
+    { say: 'A smaller letter in front of a bigger one is taken away.', show: 'IV = 4   IX = 9   XL = 40   XC = 90   CD = 400   CM = 900', pics: [table(['IV', 'IX', 'XL', 'XC', 'CD', 'CM'], ['4', '9', '40', '90', '400', '900'], 'The six pairs where a smaller letter is taken away')] },
+    { say: 'Years are read the same way, in parts.', show: 'MCMXCVIII = 1,000 + 900 + 90 + 8 = 1998', pics: [table(['M', 'CM', 'XC', 'VIII'], ['1,000', '900', '90', '8'], 'MCMXCVIII split into parts')] },
   ],
   generate(level, r) {
     if (level === 1) return readRoman(r, 1, 50, false);

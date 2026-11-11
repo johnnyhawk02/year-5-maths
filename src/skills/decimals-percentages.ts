@@ -1,7 +1,9 @@
 // Unit 5: Decimals and percentages. All wording and questions are our own.
 // Decimals are held as whole numbers of thousandths so that no rounding errors creep in.
+import { hundredSquare, numberLine, placeChart } from '../engine/pictures';
 import { fr, gcd, mx } from '../engine/fractions';
 import type { Rng } from '../engine/rng';
+import type { Written } from '../engine/written';
 import type { Frac, NumberQuestion, Question, SkillContent } from '../engine/types';
 
 const MINUS = '−';
@@ -89,9 +91,9 @@ function otherDenominatorToDecimal(r: Rng): Question {
 const decimalsAsFractions: SkillContent = {
   id: 'decimals-percentages-1',
   example: [
-    { say: 'The first decimal place is tenths. The second is hundredths.', show: '0.37  =  3 tenths and 7 hundredths' },
-    { say: 'So 0.37 is 37 hundredths. Write it over 100.', show: `0.37 = ${fr(37, 100)}` },
-    { say: 'It works the other way too. 9 hundredths needs a zero in the tenths place.', show: `${fr(9, 100)} = 0.09` },
+    { say: 'The first decimal place is tenths. The second is hundredths.', show: '0.37  =  3 tenths and 7 hundredths', pics: [placeChart(['0.37'], { hi: ['t', 'h'] })] },
+    { say: 'So 0.37 is 37 hundredths. Write it over 100.', show: `0.37 = ${fr(37, 100)}`, pics: [hundredSquare(37, '37 of the 100 squares are shaded')] },
+    { say: 'It works the other way too. 9 hundredths needs a zero in the tenths place.', show: `${fr(9, 100)} = 0.09`, pics: [placeChart(['0.09']), hundredSquare(9, '9 of the 100 squares are shaded')] },
     { say: 'A number with one decimal place is a number of tenths.', show: `0.7 = ${fr(7, 10)}`, bars: [{ parts: 10, shaded: 7 }] },
   ],
   generate(level, r) {
@@ -175,10 +177,10 @@ function oneThousandthAway(r: Rng): Question {
 const thousandths: SkillContent = {
   id: 'decimals-percentages-2',
   example: [
-    { say: 'The third decimal place is thousandths. One thousandth is one of 1,000 equal parts.', show: `0.001 = ${fr(1, 1000)}` },
-    { say: 'Each place is ten times smaller than the one before it.', show: '0.1   0.01   0.001' },
-    { say: 'Read the three decimal digits together as a number of thousandths.', show: `0.347 = ${fr(347, 1000)}` },
-    { say: 'You can also split the number into its place values.', show: '0.347 = 0.3 + 0.04 + 0.007' },
+    { say: 'The third decimal place is thousandths. One thousandth is one of 1,000 equal parts.', show: `0.001 = ${fr(1, 1000)}`, pics: [placeChart(['0.001'], { hi: ['th'] })] },
+    { say: 'Each place is ten times smaller than the one before it.', show: '0.1   0.01   0.001', pics: [placeChart(['0.1', '0.01', '0.001'])] },
+    { say: 'Read the three decimal digits together as a number of thousandths.', show: `0.347 = ${fr(347, 1000)}`, pics: [placeChart(['0.347'], { hi: ['t', 'h', 'th'] })] },
+    { say: 'You can also split the number into its place values.', show: '0.347 = 0.3 + 0.04 + 0.007', pics: [placeChart(['0.347', '0.3', '0.04', '0.007'])] },
   ],
   generate(level, r) {
     if (level === 1) return r.next() < 0.5 ? thousandthsToDecimal(r, false) : digitValue(r);
@@ -247,10 +249,10 @@ function roundingLimit(r: Rng): Question {
 const rounding: SkillContent = {
   id: 'decimals-percentages-3',
   example: [
-    { say: 'To round to the nearest whole number, look at the tenths digit.', show: '6.38' },
-    { say: 'The tenths digit is 3. That is less than 5, so round down.', show: '6.38  rounds to  6' },
-    { say: 'To round to one decimal place, look at the hundredths digit.', show: '6.38' },
-    { say: 'The hundredths digit is 8. That is 5 or more, so the tenths digit goes up by one.', show: '6.38  rounds to  6.4' },
+    { say: 'To round to the nearest whole number, look at the tenths digit.', show: '6.38', pics: [numberLine(6, 7, 0.1, [6, 6.5, 7], { points: [6.38] })] },
+    { say: 'The tenths digit is 3. That is less than 5, so round down.', show: '6.38  rounds to  6', pics: [numberLine(6, 7, 0.1, [6, 6.5, 7], { points: [6.38], jumps: [[6.38, 6]] })] },
+    { say: 'To round to one decimal place, look at the hundredths digit.', show: '6.38', pics: [numberLine(6.3, 6.4, 0.01, [6.3, 6.35, 6.4], { points: [6.38] })] },
+    { say: 'The hundredths digit is 8. That is 5 or more, so the tenths digit goes up by one.', show: '6.38  rounds to  6.4', pics: [numberLine(6.3, 6.4, 0.01, [6.3, 6.35, 6.4], { points: [6.38], jumps: [[6.38, 6.4]] })] },
   ],
   generate(level, r) {
     if (level === 1) return roundToWhole(r);
@@ -330,10 +332,10 @@ function between(r: Rng): Question {
 const ordering: SkillContent = {
   id: 'decimals-percentages-4',
   example: [
-    { say: 'To compare decimals, give them the same number of decimal places first.', show: '0.4  and  0.35' },
-    { say: 'Put a zero on the end of 0.4. It is still the same number.', show: '0.40  and  0.35' },
-    { say: 'Now compare from the left. The tenths digits are 4 and 3.', show: '0.40  >  0.35' },
-    { say: 'More digits does not mean a bigger number. Always compare place by place.', show: '0.4  >  0.35  >  0.289' },
+    { say: 'To compare decimals, give them the same number of decimal places first.', show: '0.4  and  0.35', pics: [placeChart(['0.4', '0.35'])] },
+    { say: 'Put a zero on the end of 0.4. It is still the same number.', show: '0.40  and  0.35', pics: [placeChart(['0.40', '0.35'])] },
+    { say: 'Now compare from the left. The tenths digits are 4 and 3.', show: '0.40  >  0.35', pics: [placeChart(['0.40', '0.35'], { hi: ['t'] })] },
+    { say: 'More digits does not mean a bigger number. Always compare place by place.', show: '0.4  >  0.35  >  0.289', pics: [numberLine(0.2, 0.5, 0.01, [0.2, 0.3, 0.4, 0.5], { points: [0.289, 0.35, 0.4] })] },
   ],
   generate(level, r) {
     if (level === 1) return compareDecimals(r);
@@ -343,6 +345,21 @@ const ordering: SkillContent = {
 };
 
 // ---------- 5. Decimal problems ----------
+
+/** 3.40 + 2.75 set out in columns, with the carry from the tenths. */
+const DECIMAL_SUM: Written = {
+  kind: 'column',
+  alt: '3.40 + 2.75 set out in columns with the decimal points lined up',
+  cols: 4,
+  rows: [
+    { cells: [{ d: '3' }, { d: '.' }, { d: '4' }, { d: '0' }] },
+    { op: '+', cells: [{ d: '2' }, { d: '.' }, { d: '7' }, { d: '5' }] },
+    'rule',
+    { cells: [{ d: '6', hi: true }, { d: '.', hi: true }, { d: '1', hi: true }, { d: '5', hi: true }] },
+    'rule',
+    { small: true, cells: [{ d: '1', hi: true }, { d: '' }, { d: '' }, { d: '' }] },
+  ],
+};
 
 function complement(r: Rng): Question {
   const h = r.int(1, 99);
@@ -412,10 +429,10 @@ function wordProblem(r: Rng): Question {
 const problems: SkillContent = {
   id: 'decimals-percentages-5',
   example: [
-    { say: 'To add or subtract decimals, the decimal points must line up.', show: '3.4 + 2.75' },
-    { say: 'Give both numbers the same number of decimal places by adding a zero.', show: '3.40 + 2.75' },
-    { say: 'Now add as you would with whole numbers: 340 + 275 = 615.', show: '3.40 + 2.75 = 6.15' },
-    { say: 'Check with rounding. 3 + 3 = 6, so 6.15 is sensible.' },
+    { say: 'To add or subtract decimals, the decimal points must line up.', show: '3.4 + 2.75', pics: [placeChart(['3.4', '2.75'])] },
+    { say: 'Give both numbers the same number of decimal places by adding a zero.', show: '3.40 + 2.75', pics: [placeChart(['3.40', '2.75'])] },
+    { say: 'Now add as you would with whole numbers: 340 + 275 = 615.', show: '3.40 + 2.75 = 6.15', written: DECIMAL_SUM },
+    { say: 'Check with rounding. 3 + 3 = 6, so 6.15 is sensible.', pics: [numberLine(5, 7, 0.1, [5, 6, 7], { points: [6.15] })] },
   ],
   generate(level, r) {
     if (level === 1) return r.next() < 0.5 ? complement(r) : addTenths(r);
@@ -488,10 +505,10 @@ function restOfWhole(r: Rng): Question {
 const percentages: SkillContent = {
   id: 'decimals-percentages-6',
   example: [
-    { say: 'Per cent means "out of 100". The sign for it is %.', show: `37% = ${fr(37, 100)}` },
-    { say: 'Hundredths are easy to write as a decimal, so every percentage is a decimal too.', show: `37% = ${fr(37, 100)} = 0.37` },
-    { say: 'Be careful with small percentages. 7% is 7 hundredths.', show: '7% = 0.07' },
-    { say: 'To change another fraction into a percentage, change it into hundredths first.', show: `${fr(3, 5)} = ${fr(60, 100)} = 60%`, bars: [{ parts: 5, shaded: 3 }] },
+    { say: 'Per cent means "out of 100". The sign for it is %.', show: `37% = ${fr(37, 100)}`, pics: [hundredSquare(37, '37 out of 100 is 37%')] },
+    { say: 'Hundredths are easy to write as a decimal, so every percentage is a decimal too.', show: `37% = ${fr(37, 100)} = 0.37`, pics: [placeChart(['0.37'], { hi: ['t', 'h'] })] },
+    { say: 'Be careful with small percentages. 7% is 7 hundredths.', show: '7% = 0.07', pics: [hundredSquare(7, '7 out of 100 is 7%')] },
+    { say: 'To change another fraction into a percentage, change it into hundredths first.', show: `${fr(3, 5)} = ${fr(60, 100)} = 60%`, bars: [{ parts: 5, shaded: 3 }], pics: [hundredSquare(60, '60 out of 100 is 60%')] },
   ],
   generate(level, r) {
     if (level === 1) return r.next() < 0.5 ? hundredthsToPercent(r) : percentToHundredths(r);
@@ -576,10 +593,10 @@ function mixedCompare(r: Rng): Question {
 const equivalents: SkillContent = {
   id: 'decimals-percentages-7',
   example: [
-    { say: 'A fraction, a decimal and a percentage can all show the same amount.', show: `${fr(1, 2)} = 0.5 = 50%`, bars: [{ parts: 2, shaded: 1 }] },
-    { say: 'Quarters are worth knowing by heart. Three quarters is three times as much: 0.75, or 75%.', show: `${fr(1, 4)} = 0.25 = 25%`, bars: [{ parts: 4, shaded: 1 }] },
-    { say: 'One fifth is 20 hundredths. Count up in 20s for the other fifths, so two fifths is 40%.', show: `${fr(1, 5)} = 0.2 = 20%`, bars: [{ parts: 5, shaded: 1 }] },
-    { say: `For any other fraction, change it into hundredths. Here the top and bottom are multiplied by 5: 7 ${X} 5 = 35.`, show: `${fr(7, 20)} = ${fr(35, 100)} = 0.35 = 35%` },
+    { say: 'A fraction, a decimal and a percentage can all show the same amount.', show: `${fr(1, 2)} = 0.5 = 50%`, bars: [{ parts: 2, shaded: 1 }], pics: [hundredSquare(50)] },
+    { say: 'Quarters are worth knowing by heart. Three quarters is three times as much: 0.75, or 75%.', show: `${fr(1, 4)} = 0.25 = 25%`, bars: [{ parts: 4, shaded: 1 }], pics: [hundredSquare(25)] },
+    { say: 'One fifth is 20 hundredths. Count up in 20s for the other fifths, so two fifths is 40%.', show: `${fr(1, 5)} = 0.2 = 20%`, bars: [{ parts: 5, shaded: 1 }], pics: [hundredSquare(20)] },
+    { say: `For any other fraction, change it into hundredths. Here the top and bottom are multiplied by 5: 7 ${X} 5 = 35.`, show: `${fr(7, 20)} = ${fr(35, 100)} = 0.35 = 35%`, pics: [hundredSquare(35)] },
   ],
   generate(level, r) {
     if (level === 1) return matchForm(r);

@@ -1,5 +1,6 @@
 // Unit 4: Fractions. All wording and questions are our own.
 // Fractions in text are written {3/4} or {2 3/4} and drawn stacked on screen.
+import { hundredSquare } from '../engine/pictures';
 import { fr, gcd, mx, showFrac, toMixed } from '../engine/fractions';
 import type { Rng } from '../engine/rng';
 import type { Frac, FractionQuestion, Question, SkillContent } from '../engine/types';
@@ -102,10 +103,10 @@ function orderFractions(r: Rng, beyondOne: boolean): Question {
 const comparing: SkillContent = {
   id: 'fractions-1',
   example: [
-    { say: 'When two fractions have the same denominator, the one with the bigger numerator is larger.', show: `${fr(5, 8)}  >  ${fr(3, 8)}` },
+    { say: 'When two fractions have the same denominator, the one with the bigger numerator is larger.', show: `${fr(5, 8)}  >  ${fr(3, 8)}`, bars: [{ parts: 8, shaded: 5 }, { parts: 8, shaded: 3 }] },
     { say: 'When the denominators are different, change one fraction so they match.', show: `${fr(3, 4)}  and  ${fr(5, 8)}`, bars: [{ parts: 4, shaded: 3 }, { parts: 8, shaded: 5 }] },
     { say: 'Multiply the top and bottom of {3/4} by 2. It is the same amount, cut into smaller pieces.', show: `${fr(3, 4)} = ${fr(6, 8)}`, bars: [{ parts: 8, shaded: 6 }] },
-    { say: 'Now compare the numerators.', show: `${fr(6, 8)}  >  ${fr(5, 8)}   so   ${fr(3, 4)}  >  ${fr(5, 8)}` },
+    { say: 'Now compare the numerators.', show: `${fr(6, 8)}  >  ${fr(5, 8)}   so   ${fr(3, 4)}  >  ${fr(5, 8)}`, bars: [{ parts: 8, shaded: 6 }, { parts: 8, shaded: 5 }] },
   ],
   generate(level, r) {
     if (level === 1) return compareTwo(r, true);
@@ -205,9 +206,9 @@ const equivalents: SkillContent = {
   id: 'fractions-2',
   example: [
     { say: 'Equivalent fractions look different but are worth the same.', show: `${fr(1, 2)} = ${fr(2, 4)} = ${fr(4, 8)}`, bars: [{ parts: 2, shaded: 1 }, { parts: 4, shaded: 2 }, { parts: 8, shaded: 4 }] },
-    { say: 'To make one, multiply the top and the bottom by the same number.', show: `${fr(2, 3)} = ${fr(8, 12)}   (both ${X} 4)` },
-    { say: 'Dividing the top and bottom by the same number works too. This is called simplifying.', show: `${fr(12, 18)} = ${fr(2, 3)}   (both ${DIV} 6)` },
-    { say: 'Tenths and hundredths are linked the same way.', show: `${fr(7, 10)} = ${fr(70, 100)}` },
+    { say: 'To make one, multiply the top and the bottom by the same number.', show: `${fr(2, 3)} = ${fr(8, 12)}   (both ${X} 4)`, bars: [{ parts: 3, shaded: 2 }, { parts: 12, shaded: 8 }] },
+    { say: 'Dividing the top and bottom by the same number works too. This is called simplifying.', show: `${fr(12, 18)} = ${fr(2, 3)}   (both ${DIV} 6)`, bars: [{ parts: 18, shaded: 12 }, { parts: 3, shaded: 2 }] },
+    { say: 'Tenths and hundredths are linked the same way.', show: `${fr(7, 10)} = ${fr(70, 100)}`, bars: [{ parts: 10, shaded: 7 }], pics: [hundredSquare(70, '70 hundredths fill the same space as 7 tenths')] },
   ],
   generate(level, r) {
     if (level === 1) return missingTop(r);
@@ -274,9 +275,9 @@ const mixedNumbers: SkillContent = {
   id: 'fractions-3',
   example: [
     { say: 'An improper fraction has a numerator bigger than its denominator. It is worth more than one whole.', show: fr(7, 4), bars: [{ parts: 4, shaded: 7 }] },
-    { say: 'A mixed number shows the same amount as whole ones plus a fraction.', show: `${fr(7, 4)} = ${mx(1, 3, 4)}` },
-    { say: 'To change an improper fraction, divide the top by the bottom. The answer is the wholes and the remainder is what is left.', show: `7 ${DIV} 4 = 1 remainder 3` },
-    { say: 'To go back, multiply the whole number by the denominator and add the numerator.', show: `${mx(2, 3, 5)} = ${fr(13, 5)}   (2 ${X} 5 + 3 = 13)` },
+    { say: 'A mixed number shows the same amount as whole ones plus a fraction.', show: `${fr(7, 4)} = ${mx(1, 3, 4)}`, bars: [{ parts: 4, shaded: 7 }] },
+    { say: 'To change an improper fraction, divide the top by the bottom. The answer is the wholes and the remainder is what is left.', show: `7 ${DIV} 4 = 1 remainder 3`, bars: [{ parts: 4, shaded: 7 }] },
+    { say: 'To go back, multiply the whole number by the denominator and add the numerator.', show: `${mx(2, 3, 5)} = ${fr(13, 5)}   (2 ${X} 5 + 3 = 13)`, bars: [{ parts: 5, shaded: 13 }] },
   ],
   generate(level, r) {
     if (level === 1) return improperToMixed(r);
@@ -339,9 +340,9 @@ const addSubtract: SkillContent = {
   id: 'fractions-4',
   example: [
     { say: 'When the denominators match, just add or subtract the numerators. The denominator stays the same.', show: `${fr(3, 8)} + ${fr(2, 8)} = ${fr(5, 8)}`, bars: [{ parts: 8, shaded: 5 }] },
-    { say: 'When they are different, change one fraction first so the denominators match.', show: `${fr(1, 4)} + ${fr(3, 8)}` },
-    { say: 'One quarter is the same as two eighths.', show: `${fr(2, 8)} + ${fr(3, 8)} = ${fr(5, 8)}` },
-    { say: 'If the answer is more than one whole, write it as a mixed number.', show: `${fr(3, 4)} + ${fr(5, 8)} = ${fr(11, 8)} = ${mx(1, 3, 8)}` },
+    { say: 'When they are different, change one fraction first so the denominators match.', show: `${fr(1, 4)} + ${fr(3, 8)}`, bars: [{ parts: 4, shaded: 1 }, { parts: 8, shaded: 3 }] },
+    { say: 'One quarter is the same as two eighths.', show: `${fr(2, 8)} + ${fr(3, 8)} = ${fr(5, 8)}`, bars: [{ parts: 8, shaded: 2 }, { parts: 8, shaded: 3 }, { parts: 8, shaded: 5 }] },
+    { say: 'If the answer is more than one whole, write it as a mixed number.', show: `${fr(3, 4)} + ${fr(5, 8)} = ${fr(11, 8)} = ${mx(1, 3, 8)}`, bars: [{ parts: 4, shaded: 3 }, { parts: 8, shaded: 5 }, { parts: 8, shaded: 11 }] },
   ],
   generate(level, r) {
     if (level === 1) return sameDenominator(r);
@@ -405,8 +406,8 @@ const multiplying: SkillContent = {
   example: [
     { say: 'Multiplying a fraction by a whole number means taking that many lots of it.', show: `${fr(1, 5)} ${X} 3 = ${fr(3, 5)}`, bars: [{ parts: 5, shaded: 3 }] },
     { say: 'Multiply the numerator by the whole number. The denominator does not change, because the parts stay the same size.', show: `${fr(3, 4)} ${X} 5 = ${fr(15, 4)}`, bars: [{ parts: 4, shaded: 15 }] },
-    { say: 'If the answer is improper, change it into a mixed number.', show: `${fr(15, 4)} = ${mx(3, 3, 4)}` },
-    { say: 'For a mixed number, multiply the whole part and the fraction part separately, then add.', show: `${mx(1, 2, 3)} ${X} 4  =  4 + ${fr(8, 3)}  =  ${mx(6, 2, 3)}` },
+    { say: 'If the answer is improper, change it into a mixed number.', show: `${fr(15, 4)} = ${mx(3, 3, 4)}`, bars: [{ parts: 4, shaded: 15 }] },
+    { say: 'For a mixed number, multiply the whole part and the fraction part separately, then add.', show: `${mx(1, 2, 3)} ${X} 4  =  4 + ${fr(8, 3)}  =  ${mx(6, 2, 3)}`, bars: [{ parts: 3, shaded: 20 }] },
   ],
   generate(level, r) {
     if (level === 1) return unitTimes(r);
