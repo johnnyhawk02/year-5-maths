@@ -1,4 +1,5 @@
 import type { Rng } from './rng';
+import type { Picture } from './pictures';
 import type { Written } from './written';
 
 // 1 = warm-up, 2 = core practice, 3 = greater depth.
@@ -101,6 +102,8 @@ export interface Step {
   bars?: Bar[];
   /** A written method drawn as it looks on paper at this point. */
   written?: Written;
+  /** Pictures that show the idea in this step. */
+  pics?: Picture[];
 }
 
 export interface SkillContent {

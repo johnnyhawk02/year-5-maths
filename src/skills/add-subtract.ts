@@ -1,4 +1,5 @@
 // Unit 2: Addition and subtraction. All wording and questions are our own.
+import { barModel, numberLine } from '../engine/pictures';
 import { additionPicture, subtractionPicture } from '../engine/written';
 import { fmt, PLACES, roundTo } from '../engine/format';
 import type { Rng } from '../engine/rng';
@@ -202,9 +203,9 @@ function partition(r: Rng): Question {
 const mentalMethods: SkillContent = {
   id: 'add-subtract-3',
   example: [
-    { say: 'Big numbers can still be easy. Adding thousands only changes the thousands.', show: '23,500 + 4,000 = 27,500' },
-    { say: 'You can split a number into parts and add one part at a time.', show: '46,200 + 3,800  =  46,200 + 3,000 + 800  =  50,000' },
-    { say: 'For a number that is nearly round, use the round number and then fix it.', show: '45,672 + 9,999  =  45,672 + 10,000 − 1  =  55,671' },
+    { say: 'Big numbers can still be easy. Adding thousands only changes the thousands.', show: '23,500 + 4,000 = 27,500', pics: [numberLine(23000, 28000, 500, [23000, 25000, 27000], { points: [23500, 27500], jumps: [[23500, 27500, '+4,000']] })] },
+    { say: 'You can split a number into parts and add one part at a time.', show: '46,200 + 3,800  =  46,200 + 3,000 + 800  =  50,000', pics: [numberLine(46000, 50000, 200, [46000, 48000, 50000], { points: [46200], jumps: [[46200, 49200, '+3,000'], [49200, 50000, '+800']] })] },
+    { say: 'For a number that is nearly round, use the round number and then fix it.', show: '45,672 + 9,999  =  45,672 + 10,000 − 1  =  55,671', pics: [numberLine(45000, 56000, 1000, [45000, 50000, 55000], { points: [45672], jumps: [[45672, 55672, '+10,000']], caption: 'Then take 1 away, because 9,999 is 1 less than 10,000.' })] },
   ],
   generate(level, r) {
     if (level === 1) return roundSteps(r);
@@ -286,10 +287,10 @@ function sensibleAnswer(r: Rng): Question {
 const estimating: SkillContent = {
   id: 'add-subtract-4',
   example: [
-    { say: 'An estimate is a quick, rough answer. It tells you if your real answer is sensible.', show: '48,729 + 31,240' },
-    { say: 'Round each number to something easy.', show: '50,000 + 30,000' },
-    { say: 'Add the rounded numbers. The real answer should be close to this.', show: 'about 80,000' },
-    { say: 'If your written answer came out as 179,969, the estimate tells you to look again.' },
+    { say: 'An estimate is a quick, rough answer. It tells you if your real answer is sensible.', show: '48,729 + 31,240', pics: [barModel([[['48,729', 49], ['31,240', 31]], [['?', 80, true]]], 'Two parts, 48,729 and 31,240, and the total to find')] },
+    { say: 'Round each number to something easy.', show: '50,000 + 30,000', pics: [numberLine(40000, 50000, 1000, [40000, 45000, 50000], { points: [48729], jumps: [[48729, 50000]] }), numberLine(30000, 40000, 1000, [30000, 35000, 40000], { points: [31240], jumps: [[31240, 30000]] })] },
+    { say: 'Add the rounded numbers. The real answer should be close to this.', show: 'about 80,000', pics: [barModel([[['50,000', 50], ['30,000', 30]], [['about 80,000', 80, true]]], '50,000 and 30,000 make about 80,000')] },
+    { say: 'If your written answer came out as 179,969, the estimate tells you to look again.', pics: [barModel([[['estimate: 80,000', 80]], [['179,969 is far too big', 180, true]]], 'A bar for 80,000 next to a much longer bar for 179,969')] },
   ],
   generate(level, r) {
     if (level === 1) return estimateByRounding(r);
@@ -432,10 +433,10 @@ function harder(r: Rng): Question {
 const problems: SkillContent = {
   id: 'add-subtract-5',
   example: [
-    { say: 'Read the whole problem first. Then ask: what do I need to find?', show: 'A shop has 12,450 tins. It sells 3,280 and then 4,115. How many are left?' },
-    { say: 'Decide the steps. Here you can add up what was sold, then take that from the start.', show: '3,280 + 4,115 = 7,395' },
-    { say: 'Do the second step.', show: `12,450 ${MINUS} 7,395 = 5,055` },
-    { say: 'Check with an estimate: 12,000 take away 7,000 is 5,000. So 5,055 is sensible.' },
+    { say: 'Read the whole problem first. Then ask: what do I need to find?', show: 'A shop has 12,450 tins. It sells 3,280 and then 4,115. How many are left?', pics: [barModel([[['12,450 tins', 12450]], [['3,280 sold', 3280], ['4,115 sold', 4115], ['? left', 5055, true]]], 'A bar for 12,450 tins split into 3,280 sold, 4,115 sold and the tins left')] },
+    { say: 'Decide the steps. Here you can add up what was sold, then take that from the start.', show: '3,280 + 4,115 = 7,395', pics: [barModel([[['3,280', 3280], ['4,115', 4115]], [['7,395', 7395, true]]], '3,280 and 4,115 make 7,395')] },
+    { say: 'Do the second step.', show: `12,450 ${MINUS} 7,395 = 5,055`, pics: [barModel([[['12,450', 12450]], [['7,395', 7395], ['5,055', 5055, true]]], '12,450 split into 7,395 and 5,055')] },
+    { say: 'Check with an estimate: 12,000 take away 7,000 is 5,000. So 5,055 is sensible.', pics: [barModel([[['12,000', 12000]], [['7,000', 7000], ['5,000', 5000, true]]], '12,000 split into 7,000 and 5,000')] },
   ],
   generate(level, r) {
     if (level === 1) return oneStep(r);
