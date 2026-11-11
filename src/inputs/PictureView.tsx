@@ -1,4 +1,4 @@
-import type { AnglePicture, CoordsPicture, CubesPicture, DrawingPicture, LinePicture, Picture, ShapePicture } from '../engine/pictures';
+import type { AnglePicture, CoordsPicture, CubesPicture, DrawingPicture, GraphPicture, LinePicture, Picture, ShapePicture, TablePicture } from '../engine/pictures';
 
 const W = 600, PAD = 34;
 
@@ -191,6 +191,63 @@ function Coords({ p }: { p: CoordsPicture }) {
   );
 }
 
+function Graph({ p }: { p: GraphPicture }) {
+  const named = p.series.some((s) => s.name);
+  const W = 470, L = 62, R = 32, T = named ? 34 : 14, B = 58, pw = W - L - R, ph = 220, H = T + ph + B;
+  const n = p.xLabels.length;
+  const X = (i: number) => L + (i * pw) / (n - 1), Y = (v: number) => T + ph - (v / p.yMax) * ph;
+  const lines = Math.round(p.yMax / p.yStep);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} class="pic-graph" role="img" aria-label={p.alt}>
+      {Array.from({ length: lines * 2 + 1 }, (_, k) => {
+        const v = (k * p.yStep) / 2;
+        return <line key={`h${k}`} x1={L} y1={Y(v)} x2={L + pw} y2={Y(v)} class={k % 2 ? 'gr-minor' : 'gr-grid'} />;
+      })}
+      {Array.from({ length: lines + 1 }, (_, k) => <text key={`y${k}`} x={L - 8} y={Y(k * p.yStep) + 5} text-anchor="end">{k * p.yStep}</text>)}
+      {p.xLabels.map((t, i) => (
+        <g key={`x${i}`}>
+          <line x1={X(i)} y1={T} x2={X(i)} y2={T + ph} class="gr-grid" />
+          <text x={X(i)} y={T + ph + 20} text-anchor="middle">{t}</text>
+        </g>
+      ))}
+      <line x1={L} y1={T} x2={L} y2={T + ph} class="gr-axis" />
+      <line x1={L} y1={T + ph} x2={L + pw} y2={T + ph} class="gr-axis" />
+      <text x={L + pw / 2} y={H - 8} text-anchor="middle" class="gr-title">{p.xTitle}</text>
+      <text transform={`translate(16 ${T + ph / 2}) rotate(-90)`} text-anchor="middle" class="gr-title">{p.yTitle}</text>
+      {p.guides?.map((i) => <path key={`g${i}`} d={`M ${X(i)} ${T + ph} L ${X(i)} ${Y(p.series[0].values[i])} L ${L} ${Y(p.series[0].values[i])}`} class="gr-guide" />)}
+      {p.series.map((s, k) => (
+        <g key={`s${k}`} class={`gr-series gr-s${k}`}>
+          <path d={s.values.map((v, i) => `${i ? 'L' : 'M'} ${X(i)} ${Y(v)}`).join(' ')} />
+          {s.values.map((v, i) => <circle key={i} cx={X(i)} cy={Y(v)} r={4.5} />)}
+          {s.name && (
+            <g>
+              <line x1={L + k * 170} y1={14} x2={L + k * 170 + 30} y2={14} />
+              <circle cx={L + k * 170 + 15} cy={14} r={4.5} />
+              <text x={L + k * 170 + 38} y={19}>{s.name}</text>
+            </g>
+          )}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function Table({ p }: { p: TablePicture }) {
+  const hi = (r: number, c: number) => (p.hi?.some(([a, b]) => a === r && b === c) ? 'hi' : '');
+  return (
+    <div class="pic-table-wrap">
+      <table class="pic-table" aria-label={p.alt}>
+        <thead><tr>{p.headers.map((h, i) => <th key={i} scope="col">{h}</th>)}</tr></thead>
+        <tbody>
+          {p.rows.map((row, r) => (
+            <tr key={r}>{row.map((c, i) => (i === 0 ? <th key={i} scope="row" class={hi(r, i)}>{c}</th> : <td key={i} class={hi(r, i)}>{c}</td>))}</tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /** Draws one teaching picture. */
 export function PictureView({ picture: p }: { picture: Picture }) {
   let body;
@@ -200,6 +257,8 @@ export function PictureView({ picture: p }: { picture: Picture }) {
   else if (p.kind === 'angle') body = <Angle p={p} />;
   else if (p.kind === 'drawing') body = <Drawing p={p} />;
   else if (p.kind === 'coords') body = <Coords p={p} />;
+  else if (p.kind === 'graph') body = <Graph p={p} />;
+  else if (p.kind === 'table') body = <Table p={p} />;
   else if (p.kind === 'chart') {
     const cols = p.headers.map((_, i) => (i === p.point ? '0.7em max-content' : 'max-content')).join(' ');
     const cells = (row: string[], cls: string) =>

@@ -102,7 +102,31 @@ export interface CoordsPicture extends Common {
   mirror?: { vertical: boolean; at: number };
 }
 
-export type Picture = ChartPicture | LinePicture | ModelPicture | ArrayPicture | GridPicture | ShapePicture | CubesPicture | AnglePicture | DrawingPicture | CoordsPicture;
+export interface GraphPicture extends Common {
+  kind: 'graph';
+  /** Labels along the bottom, one for each point. */
+  xLabels: string[];
+  xTitle: string;
+  yTitle: string;
+  /** The side scale runs from 0 to yMax with a labelled line every yStep. */
+  yMax: number;
+  yStep: number;
+  /** One or two lines. Names are shown in a key when given. */
+  series: { name?: string; values: number[] }[];
+  /** Points on the first line to pick out with dashed guide lines to both scales. */
+  guides?: number[];
+}
+
+export interface TablePicture extends Common {
+  kind: 'table';
+  headers: string[];
+  /** Each row starts with its own label. */
+  rows: string[][];
+  /** Cells to pick out, as [row, column] counting from 0 and including the label column. */
+  hi?: [number, number][];
+}
+
+export type Picture = ChartPicture | LinePicture | ModelPicture | ArrayPicture | GridPicture | ShapePicture | CubesPicture | AnglePicture | DrawingPicture | CoordsPicture | GraphPicture | TablePicture;
 
 const WHOLE = ['O', 'T', 'H', 'Th', 'TTh', 'HTh', 'M'];
 const PART = ['t', 'h', 'th'];
@@ -252,4 +276,12 @@ export function polygon(n: number, radii?: number[], caption?: string): DrawingP
 
 export function coords(size: number, shapes: CoordsPicture['shapes'], opts: { mirror?: CoordsPicture['mirror']; caption?: string } = {}): CoordsPicture {
   return { kind: 'coords', alt: `A coordinate grid from 0 to ${size}`, caption: opts.caption, size, shapes, mirror: opts.mirror };
+}
+
+export function lineGraph(g: Omit<GraphPicture, 'kind' | 'alt'> & { caption?: string }): GraphPicture {
+  return { kind: 'graph', alt: `A line graph of ${g.yTitle.toLowerCase()} against ${g.xTitle.toLowerCase()}`, ...g };
+}
+
+export function dataTable(headers: string[], rows: string[][], alt: string, opts: { hi?: [number, number][]; caption?: string } = {}): TablePicture {
+  return { kind: 'table', alt, headers, rows, hi: opts.hi, caption: opts.caption };
 }

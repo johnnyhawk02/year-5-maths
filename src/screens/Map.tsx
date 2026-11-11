@@ -8,7 +8,7 @@ export function MapScreen({ progress }: { progress: Progress }) {
   return (
     <div class="stack">
       <h1>Map</h1>
-      <p class="lede">Eight units cover everything in Year 5. Units 1 to 7 are ready. The others will appear as they are written.</p>
+      <p class="lede">Eight units cover everything in Year 5. All eight are ready.</p>
       <ol class="units">
         {UNITS.map((u) => {
           const isOpen = open === u.id;

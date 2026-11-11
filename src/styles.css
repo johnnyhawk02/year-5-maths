@@ -573,3 +573,22 @@ button { font: inherit; color: inherit; }
 .pg-shape.hi path { fill: color-mix(in srgb, var(--spot2) 35%, transparent); stroke: var(--spot2); }
 .pg-shape.hi circle, .pg-shape.hi text { fill: var(--spot2); }
 .q-side .pa-pro text { font-size: 14px; }
+
+.pic-graph { max-width: 100%; height: auto; }
+.pic-graph text { font-size: 14px; fill: var(--ink); }
+.pic-graph .gr-title { font-weight: 700; }
+.gr-grid { stroke: var(--line); stroke-width: 1; }
+.gr-minor { stroke: var(--line); stroke-width: 0.5; opacity: 0.6; }
+.gr-axis { stroke: var(--ink); stroke-width: 2.5; }
+.gr-guide { fill: none; stroke: var(--spot2); stroke-width: 2; stroke-dasharray: 6 5; }
+.gr-series path, .gr-series line { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; }
+.gr-series circle { fill: var(--ink); }
+.gr-s1 path, .gr-s1 line { stroke: var(--spot1); stroke-dasharray: 7 4; }
+.gr-s1 circle { fill: var(--spot1); }
+.pic-table-wrap { max-width: 100%; overflow-x: auto; }
+.pic-table { border-collapse: collapse; background: var(--page); font-variant-numeric: tabular-nums; }
+.pic-table th, .pic-table td { border: 1px solid var(--line); padding: 7px 12px; text-align: center; white-space: nowrap; font-size: 1.05rem; }
+.pic-table thead th { border-bottom: 2px solid var(--ink); font-size: 0.9rem; }
+.pic-table tbody th { text-align: left; font-weight: 600; }
+.pic-table .hi { background: color-mix(in srgb, var(--spot2) 25%, transparent); font-weight: 700; }
+@media (max-width: 480px) { .pic-table th, .pic-table td { padding: 6px 7px; font-size: 0.95rem; } }

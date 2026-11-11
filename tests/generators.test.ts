@@ -9,6 +9,7 @@ import { ALL_CONTENT } from '../src/skills';
 import { METRIC, TIME_UNITS, clockText } from '../src/skills/measurement';
 import { ANGLE_TYPES, POLYGON_NAMES, moveText } from '../src/skills/geometry';
 import { SOLIDS } from '../src/engine/solids';
+import { STORIES, SURVEYS } from '../src/skills/statistics';
 import { additionPicture, additionSteps, divisionPicture, divisionSteps, longMultiplicationPicture, shortMultiplicationPicture, shortMultiplicationSteps, subtractionPicture, subtractionSteps, type WRow, type Written } from '../src/engine/written';
 import { MIXED, ROUND_SIZE, TABLES, clock, isTableKey, makeRound } from '../src/tables';
 
@@ -945,6 +946,8 @@ describe('worked examples are shown, not just told', () => {
       if (p.kind === 'angle') { expect(p.rays.length).toBeGreaterThanOrEqual(2); expect(p.arcs.length).toBeGreaterThanOrEqual(1); }
       if (p.kind === 'drawing') expect((p.polys?.length ?? 0) + (p.lines?.length ?? 0) + (p.ovals?.length ?? 0)).toBeGreaterThan(0);
       if (p.kind === 'coords') for (const sh of p.shapes) for (const pt of sh.points) pt.forEach((n) => { expect(n).toBeGreaterThanOrEqual(0); expect(n).toBeLessThanOrEqual(p.size); });
+      if (p.kind === 'graph') for (const g of p.series) { expect(g.values.length).toBe(p.xLabels.length); g.values.forEach((v) => { expect(v).toBeGreaterThanOrEqual(0); expect(v).toBeLessThanOrEqual(p.yMax); }); }
+      if (p.kind === 'table') { p.rows.forEach((r) => expect(r.length).toBe(p.headers.length)); p.hi?.forEach(([a, b]) => { expect(a).toBeLessThan(p.rows.length); expect(b).toBeLessThan(p.headers.length); }); }
       if (p.kind === 'grid') { expect(p.shaded).toBeGreaterThanOrEqual(0); expect(p.shaded).toBeLessThanOrEqual(100); }
     }
   });
@@ -1265,6 +1268,115 @@ describe('unit 7 answers are right', () => {
       const end = c.prompt.includes('reflected') ? mirrored(start, p.mirror!) : [start[0] + move(c.prompt)[0], start[1] + move(c.prompt)[1]];
       expect(right).toBe(`(${end[0]}, ${end[1]})`);
       for (const o of c.options) for (const n of numbers(o)) expect(n).toBeLessThanOrEqual(p.size);
+    });
+  });
+});
+
+describe('unit 8 answers are right', () => {
+  const each = (id: string, fn: (q: Question) => void) => {
+    const c = ALL_CONTENT.find((x) => x.id === id)!;
+    for (const level of [1, 2, 3] as Level[]) for (let seed = 1; seed <= 3000; seed++) fn(c.generate(level, makeRng(seed)));
+  };
+  const numbers = (s: string) => [...s.matchAll(/\d+/g)].map((m) => Number(m[0]));
+  const FULL: Record<string, string> = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
+
+  it('line graphs', () => {
+    expect(STORIES.length).toBe(4);
+    each('statistics-1', (q) => {
+      const g = q.pics?.[0];
+      if (g?.kind !== 'graph') throw new Error('expected a graph');
+      const full = (x: string) => FULL[x] ?? x;
+      // Readings sit on a line of the scale or exactly halfway between two.
+      for (const s of g.series) for (const v of s.values) { expect((v * 2) % g.yStep).toBe(0); expect(v).toBeGreaterThan(0); expect(v).toBeLessThanOrEqual(g.yMax); }
+      // The labels named in the question, in the order they are named.
+      const named = g.xLabels.map((x, i) => ({ i, at: q.prompt.indexOf(full(x)) })).filter((x) => x.at >= 0).sort((a, b) => a.at - b.at).map((x) => x.i);
+      const v = g.series[0].values;
+      if (q.kind === 'choice') {
+        const best = q.prompt.includes('highest') ? Math.max(...v) : Math.min(...v);
+        expect(v.filter((x) => x === best).length).toBe(1);
+        expect(q.options[q.answer]).toBe(full(g.xLabels[v.indexOf(best)]));
+        expect(new Set(q.options).size).toBe(4);
+        return;
+      }
+      if (q.kind !== 'number') throw new Error('expected a number question');
+      if (g.series.length === 2) {
+        expect(named.length).toBe(1);
+        const [a, b] = g.series.map((s) => s.values[named[0]]);
+        expect(q.answer).toBe(Math.abs(a - b));
+        expect(q.answer).toBeGreaterThan(0);
+        // The line named first in the question is the bigger one.
+        const first = g.series.map((s) => q.prompt.indexOf(s.name!));
+        expect(first[0] < first[1]).toBe(a > b);
+      } else if (q.prompt.includes('more than')) {
+        const t = numbers(q.prompt)[0];
+        expect(q.answer).toBe(v.filter((x) => x > t).length);
+        expect(t % g.yStep).toBe(0);
+      } else if (q.prompt.includes('difference')) { expect(named.length).toBe(2); expect(q.answer).toBe(Math.abs(v[named[0]] - v[named[1]])); expect(q.answer).toBeGreaterThan(0); }
+      else if (q.prompt.includes('altogether')) { expect(named.length).toBe(2); expect(q.answer).toBe(v[named[0]] + v[named[1]]); }
+      else { expect(named.length).toBe(1); expect(q.answer).toBe(v[named[0]]); }
+    });
+  });
+
+  it('tables and timetables', () => {
+    expect(SURVEYS.length).toBe(3);
+    const mins = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const times = (s: string) => [...s.matchAll(/\d\d:\d\d/g)].map((m) => mins(m[0]));
+    each('statistics-2', (q) => {
+      const t = q.pics?.[0];
+      if (t?.kind !== 'table') throw new Error('expected a table');
+      // Longest labels first, so "Class 5A" is not mistaken for part of another label.
+      const rowsNamed = t.rows.map((r, i) => ({ i, at: q.prompt.indexOf(r[0]) })).filter((x) => x.at >= 0).sort((a, b) => a.at - b.at).map((x) => x.i);
+      if (t.headers[0] === 'Bus stop') {
+        const grid = t.rows.map((r) => r.slice(1).map(mins));
+        // Every bus runs forwards in time, and buses do not overtake.
+        for (let b = 0; b < 3; b++) for (let s = 1; s < 4; s++) expect(grid[s][b]).toBeGreaterThan(grid[s - 1][b]);
+        for (let s = 0; s < 4; s++) for (let b = 1; b < 3; b++) expect(grid[s][b]).toBeGreaterThan(grid[s][b - 1]);
+        const given = times(q.prompt);
+        if (q.kind === 'choice' && q.prompt.includes('must be at')) {
+          const [dest, from] = rowsNamed;
+          const ok = grid[dest].map((x, b) => (x <= given[0] ? b : -1)).filter((b) => b >= 0);
+          expect(ok.length).toBeGreaterThan(0);
+          expect(mins(q.options[q.answer])).toBe(grid[from][Math.max(...ok)]);
+          expect(q.options.map(mins).sort((a, b) => a - b)).toEqual(grid[from]);
+        } else if (q.kind === 'choice') {
+          const [from, to] = rowsNamed;
+          const bus = grid[from].indexOf(given[0]);
+          expect(bus).toBeGreaterThanOrEqual(0);
+          expect(mins(q.options[q.answer])).toBe(grid[to][bus]);
+          expect(new Set(q.options).size).toBe(4);
+          expect(to).toBeGreaterThan(from);
+        } else if (q.kind === 'number' && q.prompt.includes('until the next bus')) {
+          const next = Math.min(...grid[rowsNamed[0]].filter((x) => x >= given[0]));
+          expect(q.answer).toBe(next - given[0]);
+          expect(q.answer).toBeGreaterThan(0);
+        } else if (q.kind === 'number') {
+          const [from, to] = rowsNamed;
+          for (let b = 0; b < 3; b++) expect(grid[to][b] - grid[from][b]).toBe(q.answer);
+          expect(q.answer).toBeGreaterThan(0);
+        } else throw new Error('unexpected kind');
+        return;
+      }
+      if (q.kind !== 'number') throw new Error('expected a number question');
+      const hasTotals = t.headers.at(-1) === 'Total';
+      const cols = t.headers.slice(1, hasTotals ? -1 : undefined);
+      const body = t.rows.slice(0, 3).map((r) => r.slice(1, 1 + cols.length));
+      const lower = q.prompt.toLowerCase();
+      const colsNamed = cols.map((c, j) => ({ j, at: lower.indexOf(c.toLowerCase()) })).filter((x) => x.at >= 0).sort((a, b) => a.at - b.at).map((x) => x.j);
+      if (hasTotals) {
+        const gaps = body.flatMap((r, i) => r.map((c, j) => (c === '?' ? [i, j] : null))).filter(Boolean) as number[][];
+        expect(gaps.length).toBe(1);
+        const [i, j] = gaps[0];
+        const rowRest = body[i].filter((_, k) => k !== j).reduce((a, c) => a + Number(c), 0);
+        const colRest = body.filter((_, k) => k !== i).reduce((a, r) => a + Number(r[j]), 0);
+        expect(q.answer).toBe(Number(t.rows[i].at(-1)) - rowRest);
+        expect(q.answer).toBe(Number(t.rows[3][j + 1]) - colRest);
+        return;
+      }
+      const n = body.map((r) => r.map(Number));
+      if (q.prompt.includes('more')) { expect(q.answer).toBe(n[rowsNamed[0]][colsNamed[0]] - n[rowsNamed[0]][colsNamed[1]]); expect(q.answer).toBeGreaterThan(0); }
+      else if (q.prompt.includes('altogether') && rowsNamed.length) expect(q.answer).toBe(n[rowsNamed[0]].reduce((a, b) => a + b, 0));
+      else if (q.prompt.includes('altogether')) expect(q.answer).toBe(n.reduce((a, r) => a + r[colsNamed[0]], 0));
+      else expect(q.answer).toBe(n[rowsNamed[0]][colsNamed[0]]);
     });
   });
 });
