@@ -417,7 +417,8 @@ button { font: inherit; color: inherit; }
 @media (orientation: landscape) and (max-height: 860px) {
   .column { font-size: 1.45rem; padding: 10px 14px; gap: 3px 6px; }
   .column .col-cell { aspect-ratio: 1 / 0.8; min-height: 40px; }
-  .column + .pad .key { min-height: 50px; font-size: 1.35rem; }
+  .column ~ .pad .key { min-height: 50px; font-size: 1.35rem; }
+  .pad-wrap:has(.column) { gap: 8px; }
   .col-digit, .col-op { min-height: 1.3em; line-height: 1.3em; }
 }
 
@@ -490,3 +491,19 @@ button { font: inherit; color: inherit; }
 .w-divisor { padding-top: 6px; padding-right: 0.25em; text-align: right; }
 .w-rem { padding-left: 0.5em; white-space: nowrap; }
 .feedback .written { font-size: 1.5rem; }
+
+/* Jotting space in written questions: carry boxes and exchanges */
+.col-cell.carry { aspect-ratio: auto; min-height: 30px; height: 30px; width: 70%; justify-self: center; font-size: 0.6em; border-style: dashed; border-width: 1.5px; }
+.jot { font-size: 0.85rem; margin: -4px 0 0; }
+.column.exchanging { row-gap: 12px; padding-top: 26px; }
+.top-digit { position: relative; font: inherit; color: var(--ink); background: none; border: 0; border-bottom: 2px dotted var(--line); padding: 0; cursor: pointer; }
+.top-digit:disabled { border-bottom-color: transparent; cursor: default; opacity: 1; color: var(--ink); }
+.top-digit .w-above, .top-digit .w-pre { color: var(--spot2); }
+.top-digit .w-pre { right: 72%; }
+.division .under { position: relative; padding-left: 34px; }
+.carry-box {
+  position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: 28px; height: 34px; padding: 0; line-height: 1;
+  font: inherit; font-size: 1.1rem; color: var(--spot2); background: var(--page); border: 1.5px dashed var(--line); border-radius: 5px; cursor: pointer;
+}
+.carry-box.active { border-color: var(--spot1); border-style: solid; }
+.carry-box:disabled { opacity: 1; color: var(--spot2); }

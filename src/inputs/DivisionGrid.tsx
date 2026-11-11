@@ -32,9 +32,13 @@ export function DivisionGrid({ dividend, divisor, askRemainder, value, onChange,
   const cells = value.cells.length === width ? value.cells : Array<string>(width).fill('');
   // -1 means the remainder box.
   const [active, setActive] = useState(0);
+  // Small boxes in front of each digit for carried remainders. They are not marked.
+  const CARRY = 100;
+  const [carry, setCarry] = useState<string[]>(() => Array<string>(width).fill(''));
 
   const press = (k: string) => {
     if (disabled) return;
+    if (active >= CARRY) return setCarry(carry.map((c, i) => (i === active - CARRY ? (k === 'del' ? '' : k) : c)));
     if (active === -1) return onChange({ cells, rem: k === 'del' ? '' : k });
     const next = [...cells];
     if (k === 'del') {
@@ -84,9 +88,25 @@ export function DivisionGrid({ dividend, divisor, askRemainder, value, onChange,
           </>
         )}
         <span class="col-digit divisor">{divisor}</span>
-        {digits.map((d, i) => <span key={i} class={`col-digit under ${i === 0 ? 'first' : ''}`}>{d}</span>)}
+        {digits.map((d, i) => (
+          <span key={i} class={`col-digit under ${i === 0 ? 'first' : ''}`}>
+            {i > 0 && (
+              <button
+                type="button"
+                class={`carry-box ${active === CARRY + i && !disabled ? 'active' : ''}`}
+                disabled={disabled}
+                aria-label={`Carry box in front of the ${d}`}
+                onClick={() => setActive(CARRY + i)}
+              >
+                {carry[i]}
+              </button>
+            )}
+            {d}
+          </span>
+        ))}
         {askRemainder && <><span /><span /></>}
       </div>
+      <p class="hint-text jot">Small boxes are for carried digits.</p>
       <Keys press={press} disabled={disabled} />
     </div>
   );
