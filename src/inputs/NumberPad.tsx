@@ -6,6 +6,8 @@ interface Props {
   allowNegative?: boolean;
   decimal?: boolean;
   unit?: string;
+  /** Shown in front of the number, such as a pound sign. */
+  prefix?: string;
   disabled?: boolean;
 }
 
@@ -13,7 +15,7 @@ const MAX_DIGITS = 7;
 
 export const padValue = (v: string): number | null => (v === '' || v === '-' ? null : Number(v));
 
-export function NumberPad({ value, onChange, allowNegative, decimal, unit, disabled }: Props) {
+export function NumberPad({ value, onChange, allowNegative, decimal, unit, prefix, disabled }: Props) {
   const press = (k: string) => {
     if (disabled) return;
     if (k === 'del') return onChange(value.slice(0, -1));
@@ -28,10 +30,15 @@ export function NumberPad({ value, onChange, allowNegative, decimal, unit, disab
     onChange(value + k);
   };
   const n = padValue(value);
-  const shown = n === null ? (value === '-' ? '−' : '') : (value.startsWith('-') && n === 0 ? '−0' : fmt(n));
+  // Show exactly what was typed after the decimal point, so "3." and "3.50" look as they were entered.
+  const [whole, part] = value.replace('-', '').split('.');
+  const shown = n === null
+    ? (value === '-' ? '−' : '')
+    : (value.startsWith('-') ? '−' : '') + fmt(Number(whole)) + (part !== undefined ? `.${part}` : '');
   return (
     <div class="pad-wrap">
       <div class="answer-box" aria-live="polite" aria-label="Your answer">
+        {prefix && <span class="suffix">{prefix}</span>}
         <span>{shown || ' '}</span>
         {unit && <span class="suffix">{unit}</span>}
       </div>

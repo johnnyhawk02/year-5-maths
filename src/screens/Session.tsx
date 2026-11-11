@@ -7,6 +7,7 @@ import { ColumnGrid, columnValue } from '../inputs/ColumnGrid';
 import { DivisionGrid, divisionValue, emptyDivision } from '../inputs/DivisionGrid';
 import { FractionBars } from '../inputs/FractionBars';
 import { FractionInput, emptyFraction, fractionValue } from '../inputs/FractionInput';
+import { PictureView } from '../inputs/PictureView';
 import { Rich } from '../inputs/Rich';
 import { WrittenPicture } from '../inputs/WrittenPicture';
 import { additionPicture, additionSteps, divisionPicture, divisionSteps, longMultiplicationPicture, LONG_MULTIPLICATION_STEPS, shortMultiplicationPicture, shortMultiplicationSteps, subtractionPicture, subtractionSteps, type Written } from '../engine/written';
@@ -28,7 +29,7 @@ interface Item { q: Question; level: Level; extra: boolean }
 
 const rightAnswer = (q: Question): string => {
   switch (q.kind) {
-    case 'number': return fmt(q.answer) + (q.unit ?? '');
+    case 'number': return q.money ? `£${q.answer.toFixed(2)}` : fmt(q.answer) + (q.unit ? (/^[%°]/.test(q.unit) ? q.unit : ` ${q.unit}`) : '');
     case 'choice': return q.options[q.answer];
     case 'order': return q.answer.join(',  ');
     case 'line': return fmt(q.answer);
@@ -162,6 +163,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
         <section class="q-side">
           <p class="prompt"><Rich text={q.prompt} /></p>
           {q.show && <p class="show"><Rich text={q.show} /></p>}
+          {q.pics?.map((p, pi) => <PictureView key={pi} picture={p} />)}
           {q.bars && <FractionBars bars={q.bars} />}
 
           {mode === 'try' && !locked && (
@@ -184,7 +186,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
         </section>
 
         <section class="a-side">
-          {q.kind === 'number' && <NumberPad value={pad} onChange={setPad} allowNegative={q.allowNegative} decimal={q.decimal} unit={q.unit} disabled={locked} />}
+          {q.kind === 'number' && <NumberPad value={pad} onChange={setPad} allowNegative={q.allowNegative} decimal={q.decimal} unit={q.unit} prefix={q.money ? '£' : undefined} disabled={locked} />}
           {q.kind === 'column' && <ColumnGrid key={index} op={q.op} rows={q.rows} answer={q.answer} workRows={q.workRows} value={cells} onChange={setCells} disabled={locked} />}
           {q.kind === 'division' && (
             <DivisionGrid key={index} dividend={q.dividend} divisor={q.divisor} askRemainder={q.askRemainder} value={division} onChange={setDivision} disabled={locked} />

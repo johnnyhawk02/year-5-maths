@@ -49,7 +49,27 @@ export interface GridPicture extends Common {
   shaded: number;
 }
 
-export type Picture = ChartPicture | LinePicture | ModelPicture | ArrayPicture | GridPicture;
+export interface ShapePicture extends Common {
+  kind: 'shape';
+  /** Corners in order, in grid units. x goes right and y goes down. */
+  points: [number, number][];
+  /** Text placed at a point in grid units, such as a side length. */
+  labels: { x: number; y: number; text: string; anchor?: 'start' | 'middle' | 'end' }[];
+  /** Draw the unit squares inside the shape, for counting area. */
+  squares?: boolean;
+  /** Dashed lines inside the shape, such as where it splits into rectangles. */
+  cuts?: [number, number, number, number][];
+}
+
+export interface CubesPicture extends Common {
+  kind: 'cubes';
+  /** A block of unit cubes: how many wide, deep and high. */
+  wide: number;
+  deep: number;
+  high: number;
+}
+
+export type Picture = ChartPicture | LinePicture | ModelPicture | ArrayPicture | GridPicture | ShapePicture | CubesPicture;
 
 const WHOLE = ['O', 'T', 'H', 'Th', 'TTh', 'HTh', 'M'];
 const PART = ['t', 'h', 'th'];
@@ -110,4 +130,59 @@ export const dotArray = (rows: number, cols: number, caption?: string, copies?: 
 
 export const hundredSquare = (shaded: number, caption?: string): GridPicture => ({
   kind: 'grid', alt: `A hundred square with ${shaded} of the 100 squares shaded`, caption, shaded,
+});
+
+/** A number line whose labels and points carry their own text, such as times or measures. */
+export function scaleLine(
+  min: number, max: number, step: number, labels: [number, string][],
+  opts: { points?: [number, string][]; jumps?: [number, number, string?][]; caption?: string; alt?: string } = {},
+): LinePicture {
+  return {
+    kind: 'line',
+    alt: opts.alt ?? `A scale from ${labels[0][1]} to ${labels[labels.length - 1][1]}`,
+    caption: opts.caption,
+    min, max, step,
+    labels: labels.map(([at, t]) => ({ at, text: t })),
+    points: opts.points?.map(([at, t]) => ({ at, text: t })),
+    jumps: opts.jumps?.map(([from, to, t]) => ({ from, to, text: t })),
+  };
+}
+
+/** A rectangle with its width labelled underneath and its height labelled at the side. */
+export function rectangle(w: number, h: number, wText: string, hText: string, opts: { squares?: boolean; caption?: string; scale?: number } = {}): ShapePicture {
+  // Long thin rectangles are drawn to a gentler shape so the labels stay readable.
+  const k = opts.scale ?? 1;
+  const dw = w * k, dh = h * k;
+  return {
+    kind: 'shape',
+    alt: `A rectangle ${wText} wide and ${hText} high`,
+    caption: opts.caption,
+    points: [[0, 0], [dw, 0], [dw, dh], [0, dh]],
+    labels: [{ x: dw / 2, y: dh + 0.7, text: wText }, { x: -0.3, y: dh / 2, text: hText, anchor: 'end' }],
+    squares: opts.squares,
+  };
+}
+
+/**
+ * An L shape: a w by h rectangle with a cw by ch corner cut from the top right.
+ * Labels are given in order: bottom, left, top, step down, step across, right.
+ */
+export function lShape(w: number, h: number, cw: number, ch: number, texts: string[], opts: { squares?: boolean; caption?: string; cut?: boolean } = {}): ShapePicture {
+  const [bottom, left, top, down, across, right] = texts;
+  return {
+    kind: 'shape',
+    alt: 'An L shape made from two rectangles',
+    caption: opts.caption,
+    points: [[0, 0], [w - cw, 0], [w - cw, ch], [w, ch], [w, h], [0, h]],
+    labels: [
+      { x: w / 2, y: h + 0.7, text: bottom }, { x: -0.3, y: h / 2, text: left, anchor: 'end' as const }, { x: (w - cw) / 2, y: -0.35, text: top },
+      { x: w - cw + 0.25, y: ch / 2, text: down, anchor: 'start' as const }, { x: w - cw / 2, y: ch - 0.35, text: across }, { x: w + 0.25, y: (h + ch) / 2, text: right, anchor: 'start' as const },
+    ].filter((l) => l.text),
+    squares: opts.squares,
+    cuts: opts.cut ? [[0, ch, w - cw, ch]] : undefined,
+  };
+}
+
+export const cubes = (wide: number, deep: number, high: number, caption?: string): CubesPicture => ({
+  kind: 'cubes', alt: `A block of cubes ${wide} wide, ${deep} deep and ${high} high`, caption, wide, deep, high,
 });

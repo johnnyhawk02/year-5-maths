@@ -539,3 +539,14 @@ button { font: inherit; color: inherit; }
   .pic-line { margin-bottom: 8px; }
   .pc-digit { font-size: 1.2rem; padding: 4px 5px; }
 }
+
+.pic-shape, .pic-cubes { max-width: 100%; height: auto; }
+.ps-fill { fill: color-mix(in srgb, var(--spot2) 22%, var(--page)); stroke: none; }
+.ps-edge { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; }
+.pic-cubes .ps-edge line { stroke-width: 1.5; }
+.ps-grid line { stroke: var(--ink); stroke-width: 1; opacity: 0.45; }
+.ps-cut { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 6 5; }
+.ps-label { font-size: 17px; font-weight: 600; fill: var(--ink); }
+
+.pc-digit, .pc-head { white-space: nowrap; min-width: 2.2em; }
+.q-side .pl-label, .q-side .pl-point text, .q-side .pl-jump text { font-size: 22px; }
