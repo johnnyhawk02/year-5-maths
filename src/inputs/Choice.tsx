@@ -1,3 +1,5 @@
+import { Rich } from './Rich';
+
 interface Props {
   options: string[];
   value: number | null;
@@ -18,7 +20,7 @@ export function Choice({ options, value, onChange, disabled }: Props) {
           disabled={disabled}
           onClick={() => onChange(i)}
         >
-          {o}
+          <Rich text={o} />
         </button>
       ))}
     </div>

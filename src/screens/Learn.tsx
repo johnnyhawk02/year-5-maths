@@ -1,5 +1,7 @@
 import { useState } from 'preact/hooks';
 import { getSkillContent } from '../skills';
+import { FractionBars } from '../inputs/FractionBars';
+import { Rich } from '../inputs/Rich';
 import { findSkill } from './Skill';
 
 export function Learn({ id }: { id: string }) {
@@ -16,8 +18,9 @@ export function Learn({ id }: { id: string }) {
       <ol class="example">
         {steps.slice(0, shown).map((s, i) => (
           <li key={i} class="card example-step">
-            <p>{s.say}</p>
-            {s.show && <p class="show">{s.show}</p>}
+            <p><Rich text={s.say} /></p>
+            {s.show && <p class="show"><Rich text={s.show} /></p>}
+            {s.bars && <FractionBars bars={s.bars} />}
           </li>
         ))}
       </ol>

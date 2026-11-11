@@ -5,6 +5,10 @@ import { isCorrect, type Level, type Question, type Response } from '../engine/t
 import { Choice } from '../inputs/Choice';
 import { ColumnGrid, columnValue } from '../inputs/ColumnGrid';
 import { DivisionGrid, divisionValue, emptyDivision } from '../inputs/DivisionGrid';
+import { FractionBars } from '../inputs/FractionBars';
+import { FractionInput, emptyFraction, fractionValue } from '../inputs/FractionInput';
+import { Rich } from '../inputs/Rich';
+import { showFrac } from '../engine/fractions';
 import { NumberLine } from '../inputs/NumberLine';
 import { NumberPad, padValue } from '../inputs/NumberPad';
 import { Order } from '../inputs/Order';
@@ -28,6 +32,7 @@ const rightAnswer = (q: Question): string => {
     case 'line': return fmt(q.answer);
     case 'column': return fmt(q.answer);
     case 'division': return fmt(q.answer) + (q.askRemainder ? ` remainder ${q.remainder}` : '');
+    case 'fraction': return showFrac(q.answer);
   }
 };
 
@@ -45,6 +50,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
   const [point, setPoint] = useState<number | null>(null);
   const [cells, setCells] = useState<string[]>([]);
   const [division, setDivision] = useState(emptyDivision);
+  const [fraction, setFraction] = useState(emptyFraction);
   const [checked, setChecked] = useState<null | boolean>(null);
   const [hint, setHint] = useState(false);
   const [score, setScore] = useState(0);
@@ -88,7 +94,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
   const item = items[index];
   const q = item.q;
   const response: Response =
-    q.kind === 'number' ? padValue(pad) : q.kind === 'column' ? columnValue(cells) : q.kind === 'division' ? divisionValue(division, q.askRemainder) : q.kind === 'choice' ? pick : q.kind === 'line' ? point : placed.length === q.items.length ? placed : null;
+    q.kind === 'number' ? padValue(pad) : q.kind === 'column' ? columnValue(cells) : q.kind === 'division' ? divisionValue(division, q.askRemainder) : q.kind === 'fraction' ? fractionValue(fraction) : q.kind === 'choice' ? pick : q.kind === 'line' ? point : placed.length === q.items.length ? placed : null;
   const locked = checked !== null;
 
   const check = () => {
@@ -120,6 +126,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
     setPoint(null);
     setCells([]);
     setDivision(emptyDivision());
+    setFraction(emptyFraction());
     setChecked(null);
     setHint(false);
   };
@@ -136,11 +143,12 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
 
       <div class={`q-layout ${q.kind === 'line' ? 'one-col' : ''}`}>
         <section class="q-side">
-          <p class="prompt">{q.prompt}</p>
-          {q.show && <p class="show">{q.show}</p>}
+          <p class="prompt"><Rich text={q.prompt} /></p>
+          {q.show && <p class="show"><Rich text={q.show} /></p>}
+          {q.bars && <FractionBars bars={q.bars} />}
 
           {mode === 'try' && !locked && (
-            hint ? <p class="card hint-card">{q.explain[0]}</p> : <button class="link hint-btn" onClick={() => setHint(true)}>Show a hint</button>
+            hint ? <p class="card hint-card"><Rich text={q.explain[0]} /></p> : <button class="link hint-btn" onClick={() => setHint(true)}>Show a hint</button>
           )}
 
           {locked && (
@@ -149,9 +157,9 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
                 <span class={`verdict ${checked ? 'yes' : 'no'}`} aria-hidden="true">{checked ? '✓' : '✕'}</span>
                 {checked ? 'Correct' : 'Not quite'}
               </p>
-              {!checked && <p>The answer is <strong>{rightAnswer(q)}</strong>.</p>}
+              {!checked && <p>The answer is <strong><Rich text={rightAnswer(q)} /></strong>.</p>}
               <ul class="working">
-                {q.explain.map((line, i) => <li key={i}>{line}</li>)}
+                {q.explain.map((line, i) => <li key={i}><Rich text={line} /></li>)}
               </ul>
             </div>
           )}
@@ -163,6 +171,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
           {q.kind === 'division' && (
             <DivisionGrid key={index} dividend={q.dividend} divisor={q.divisor} askRemainder={q.askRemainder} value={division} onChange={setDivision} disabled={locked} />
           )}
+          {q.kind === 'fraction' && <FractionInput key={index} mixed={q.mixed} value={fraction} onChange={setFraction} disabled={locked} />}
           {q.kind === 'choice' && <Choice options={q.options} value={pick} onChange={setPick} disabled={locked} />}
           {q.kind === 'order' && <Order items={q.items} value={placed} onChange={setPlaced} disabled={locked} />}
           {q.kind === 'line' && (
