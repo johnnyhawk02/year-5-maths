@@ -113,6 +113,11 @@ export function Session({ id, mode, onRecorded, helper = true }: { id: string; m
     return () => clearTimeout(t);
   }, [helper, done, checked, index, touched, alpaca?.kind === 'hint']);
 
+  // On a phone the answer keys can fill the screen, so bring the marking into view.
+  useEffect(() => {
+    if (checked !== null) document.querySelector('.feedback')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [checked, index]);
+
   // Things it says go away by themselves. A hint stays until the question is answered.
   useEffect(() => {
     if (alpaca?.kind !== 'say') return;
@@ -296,7 +301,7 @@ export function Session({ id, mode, onRecorded, helper = true }: { id: string; m
           {q.kind === 'line' && (
             <NumberLine min={q.min} max={q.max} step={q.step} labelEvery={q.labelEvery} value={point} onChange={setPoint} disabled={locked} reveal={checked === false ? q.answer : undefined} />
           )}
-          <div class="row end">
+          <div class="row end actions">
             {locked ? (
               <button class="btn primary wide" onClick={next}>{index + 1 >= items.length ? 'Finish' : 'Next'}</button>
             ) : (

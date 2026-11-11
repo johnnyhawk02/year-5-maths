@@ -16,6 +16,7 @@ export default defineConfig({
         short_name: 'Y5 Maths',
         description: 'Learn and practise Year 5 maths, online or offline.',
         lang: 'en-GB',
+        id: './',
         start_url: '.',
         scope: '.',
         display: 'standalone',

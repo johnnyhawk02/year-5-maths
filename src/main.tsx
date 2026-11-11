@@ -1,5 +1,6 @@
 import { render } from 'preact';
 import { App } from './app';
+import './platform';
 import { applySettings, loadSettings } from './theme';
 import './styles.css';
 
