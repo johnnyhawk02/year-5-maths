@@ -592,3 +592,11 @@ button { font: inherit; color: inherit; }
 .pic-table tbody th { text-align: left; font-weight: 600; }
 .pic-table .hi { background: color-mix(in srgb, var(--spot2) 25%, transparent); font-weight: 700; }
 @media (max-width: 480px) { .pic-table th, .pic-table td { padding: 6px 7px; font-size: 0.95rem; } }
+
+.progress-table { width: 100%; }
+.progress-table th, .progress-table td { font-size: 0.95rem; }
+.progress-table tbody th { white-space: normal; min-width: 12em; }
+.progress-table .tick { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.btn.danger { background: #B3261E; border-color: #B3261E; color: #fff; }
+.results .skills.card { padding: 0; list-style: none; }
+@media (max-width: 480px) { .progress-table tbody th { min-width: 7em; } .progress-table th, .progress-table td { padding: 5px 5px; font-size: 0.85rem; } }

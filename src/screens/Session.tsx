@@ -15,17 +15,26 @@ import { showFrac } from '../engine/fractions';
 import { NumberLine } from '../inputs/NumberLine';
 import { NumberPad, padValue } from '../inputs/NumberPad';
 import { Order } from '../inputs/Order';
-import { PASS_MARK, SET_SIZE, recordPractice } from '../progress';
+import { CHECK_PASS, checkPlan, checkTitle, recordCheck, todaysReview, type Slot } from '../checks';
+import { PASS_MARK, SET_SIZE, loadProgress, recordPractice } from '../progress';
+import { dayKey, recordReview } from '../review';
 import { getSkillContent } from '../skills';
 import { findSkill } from './Skill';
 
-type Mode = 'try' | 'practise';
+type Mode = 'try' | 'practise' | 'review' | 'check';
 
 const PRACTISE_LEVELS: Level[] = [1, 1, 1, 2, 2, 2, 2, 3, 3, 3];
 const TRY_LEVELS: Level[] = [1, 1, 2];
 const MAX_EXTRA = 3;
 
-interface Item { q: Question; level: Level; extra: boolean }
+interface Item { q: Question; level: Level; extra: boolean; skillId: string }
+
+/** Which skills and levels a session asks about. */
+function planFor(mode: Mode, id: string, rng: ReturnType<typeof makeRng>): Slot[] {
+  if (mode === 'review') return todaysReview(dayKey(new Date()));
+  if (mode === 'check') return checkPlan(id, rng);
+  return (mode === 'try' ? TRY_LEVELS : PRACTISE_LEVELS).map((level) => ({ skillId: id, level }));
+}
 
 const rightAnswer = (q: Question): string => {
   switch (q.kind) {
@@ -54,12 +63,16 @@ const finishedWorking = (q: Question): Written | null => {
 };
 
 export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRecorded: () => void }) {
-  const content = getSkillContent(id);
-  const found = findSkill(id);
+  const single = mode === 'try' || mode === 'practise';
+  const found = single ? findSkill(id) : null;
   const rng = useMemo(() => makeRng(Date.now()), [id, mode]);
   const [items, setItems] = useState<Item[]>(() =>
-    content ? (mode === 'try' ? TRY_LEVELS : PRACTISE_LEVELS).map((level) => ({ q: content.generate(level, rng), level, extra: false })) : [],
+    planFor(mode, id, rng).flatMap((slot) => {
+      const c = getSkillContent(slot.skillId);
+      return c ? [{ q: c.generate(slot.level, rng), level: slot.level, extra: false, skillId: slot.skillId }] : [];
+    }),
   );
+  const [missed, setMissed] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [pad, setPad] = useState('');
   const [pick, setPick] = useState<number | null>(null);
@@ -73,9 +86,51 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
 
-  if (!content || !found) return null;
+  if (single && !found) return null;
 
-  if (done) {
+  if (!items.length) {
+    return (
+      <div class="stack results">
+        <h1>{mode === 'review' ? 'Nothing to review today' : 'Not ready yet'}</h1>
+        <p class="lede">{mode === 'review' ? 'Skills come back for review a day after you tick them, then after longer and longer gaps.' : 'This check could not be found.'}</p>
+        <div class="row"><a class="btn primary" href="#/home">Back to Home</a></div>
+      </div>
+    );
+  }
+
+  if (done && !single) {
+    const total = items.length;
+    const passed = score >= total * CHECK_PASS;
+    const again = [...new Set(missed)].map((s) => findSkill(s)).filter((f) => f !== null);
+    return (
+      <div class="stack results">
+        <p class="eyebrow">{mode === 'review' ? 'Daily review' : checkTitle(id)}</p>
+        <h1>{score} out of {total}</h1>
+        <div class="meter" aria-hidden="true"><div class="meter-fill" style={{ width: `${(score / total) * 100}%` }} /></div>
+        {mode === 'review' ? (
+          <p class="lede">{score === total ? 'All remembered. These skills will come back after a longer gap.' : 'The ones you missed will come back tomorrow. The rest will come back after a longer gap.'}</p>
+        ) : id === 'start' ? (
+          <p class="lede">{again.length ? 'This shows what you know already. The skills below are good ones to learn first.' : 'A strong start. Work through the map to make sure of every skill.'}</p>
+        ) : passed ? (
+          <p class="mark big"><span class="tick done" aria-hidden="true" /> Passed. Well done.</p>
+        ) : (
+          <p class="lede">You need {Math.ceil(total * CHECK_PASS)} to pass. Have another go at the skills below, then try again.</p>
+        )}
+        {again.length > 0 && (
+          <ul class="skills card">
+            {again.map((f) => (
+              <li key={f.skill.id}><a class="skill ready" href={`#/skill/${f.skill.id}`}><span class="tick" aria-hidden="true" /><span>{f.skill.name}</span><span class="soon">Look again {'›'}</span></a></li>
+            ))}
+          </ul>
+        )}
+        <div class="row">
+          <a class="btn primary" href={mode === 'review' ? '#/home' : '#/map'}>{mode === 'review' ? 'Back to Home' : 'Back to the map'}</a>
+        </div>
+      </div>
+    );
+  }
+
+  if (done && found) {
     const passed = score >= PASS_MARK;
     return (
       <div class="stack results">
@@ -119,21 +174,26 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
     if (response === null) return;
     const ok = isCorrect(q, response);
     setChecked(ok);
-    if (mode === 'practise') {
+    if (mode === 'review') recordReview(loadProgress(), item.skillId, ok);
+    if (!single) {
+      if (ok) setScore(score + 1);
+      else setMissed([...missed, item.skillId]);
+    }
+    const content = getSkillContent(item.skillId);
+    if (mode === 'practise' && content) {
       if (ok && !item.extra) setScore(score + 1);
       // A slip earns one more question of the same kind at the end of the set.
       if (!ok && items.filter((i) => i.extra).length < MAX_EXTRA) {
-        setItems([...items, { q: content.generate(item.level, rng), level: item.level, extra: true }]);
+        setItems([...items, { q: content.generate(item.level, rng), level: item.level, extra: true, skillId: item.skillId }]);
       }
     }
   };
 
   const next = () => {
     if (index + 1 >= items.length) {
-      if (mode === 'practise') {
-        recordPractice(id, score);
-        onRecorded();
-      }
+      if (mode === 'practise') recordPractice(id, score);
+      if (mode === 'check') recordCheck(id, score, items.length, missed);
+      if (mode !== 'try') onRecorded();
       setDone(true);
       return;
     }
@@ -152,7 +212,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
   return (
     <div class="session">
       <div class="session-top">
-        <a class="crumb" href={`#/skill/${id}`}>Stop</a>
+        <a class="crumb" href={single ? `#/skill/${id}` : '#/home'}>Stop</a>
         <div class="meter" role="img" aria-label={`Question ${index + 1} of ${items.length}`}>
           <div class="meter-fill" style={{ width: `${(index / items.length) * 100}%` }} />
         </div>
@@ -161,6 +221,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
 
       <div class={`q-layout ${q.kind === 'line' ? 'one-col' : ''}`}>
         <section class="q-side">
+          {!single && <p class="eyebrow">{findSkill(item.skillId)?.skill.name}</p>}
           <p class="prompt"><Rich text={q.prompt} /></p>
           {q.show && <p class="show"><Rich text={q.show} /></p>}
           {q.pics?.map((p, pi) => <PictureView key={pi} picture={p} />)}

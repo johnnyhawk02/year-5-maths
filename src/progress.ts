@@ -1,6 +1,7 @@
 // What the child has done so far, kept on this device.
 import { UNITS } from './curriculum';
 import { hasContent } from './skills';
+import { recordEnrol } from './review';
 
 export interface SkillProgress {
   best: number; // best score out of 10
@@ -40,6 +41,8 @@ export function recordPractice(skillId: string, score: number): Progress {
   } catch {
     /* ignore */
   }
+  // A skill ticked for the first time joins the daily review list.
+  if (all[skillId].ticked && !before?.ticked) recordEnrol(all, skillId);
   return all;
 }
 
