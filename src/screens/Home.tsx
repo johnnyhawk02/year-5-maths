@@ -1,3 +1,4 @@
+import { AlpacaFace } from '../inputs/Alpaca';
 import { SKILL_COUNT, UNITS } from '../curriculum';
 import { loadChecks, reviewPlan } from '../checks';
 import { nextSkill, tickedCount, type Progress } from '../progress';
@@ -12,7 +13,7 @@ export function Home({ progress }: { progress: Progress }) {
   const checks = loadChecks();
   return (
     <div class="stack">
-      <h1>Hello</h1>
+      <div class="row hello"><div class="home-alpaca"><AlpacaFace /></div><h1>Hello</h1></div>
       <section class="card">
         {next ? (
           <>
