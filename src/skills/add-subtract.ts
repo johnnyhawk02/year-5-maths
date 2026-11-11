@@ -1,4 +1,5 @@
 // Unit 2: Addition and subtraction. All wording and questions are our own.
+import { additionPicture, subtractionPicture } from '../engine/written';
 import { fmt, PLACES, roundTo } from '../engine/format';
 import type { Rng } from '../engine/rng';
 import type { Question, SkillContent } from '../engine/types';
@@ -71,10 +72,12 @@ function columnAdd(r: Rng, ranges: [number, number][]): Question {
 const columnAddition: SkillContent = {
   id: 'add-subtract-1',
   example: [
-    { say: 'Line the numbers up so that ones are under ones, tens under tens, and so on.', show: '46,275 + 8,163' },
-    { say: 'Add the ones first. 5 + 3 = 8.' },
-    { say: 'Tens: 7 + 6 = 13. That is 3 tens and 1 hundred, so write 3 and carry 1.', show: 'write 3, carry 1' },
-    { say: 'Carry on to the left, adding any carried digit each time.', show: '46,275 + 8,163 = 54,438' },
+    { say: 'Line the numbers up so that ones are under ones, tens under tens, and so on. Draw a line underneath for the answer.', show: '46,275 + 8,163', written: additionPicture([46275, 8163], 0) },
+    { say: 'Add the ones first. 5 + 3 = 8. Write 8 in the ones column.', written: additionPicture([46275, 8163], 1) },
+    { say: 'Tens: 7 + 6 = 13. That is 3 tens and 1 hundred. Write 3 in the tens column and carry the 1 by writing it small under the hundreds column.', written: additionPicture([46275, 8163], 2) },
+    { say: 'Hundreds: 2 + 1 = 3, and the carried 1 makes 4.', written: additionPicture([46275, 8163], 3) },
+    { say: 'Thousands: 6 + 8 = 14. Write 4 and carry 1 to the ten thousands.', written: additionPicture([46275, 8163], 4) },
+    { say: 'Ten thousands: 4, and the carried 1 makes 5. The answer is 54,438.', written: additionPicture([46275, 8163], 5) },
   ],
   generate(level, r) {
     if (level === 1) return columnAdd(r, [[10_000, 79_999], [1_000, 9_999]]);
@@ -99,10 +102,12 @@ function columnSubtract(r: Rng, a: number, b: number): Question {
 const columnSubtraction: SkillContent = {
   id: 'add-subtract-2',
   example: [
-    { say: 'Line the numbers up, with the bigger number on top.', show: `52,364 ${MINUS} 7,138` },
-    { say: 'Ones: 4 is less than 8, so exchange one ten for ten ones. Now it is 14 take away 8.', show: `14 ${MINUS} 8 = 6` },
-    { say: 'The tens digit went down by one when you exchanged, so the 6 is now 5.', show: `5 ${MINUS} 3 = 2` },
-    { say: 'Keep going to the left, exchanging whenever the top digit is too small.', show: `52,364 ${MINUS} 7,138 = 45,226` },
+    { say: 'Line the numbers up, with the bigger number on top.', show: `52,364 ${MINUS} 7,138`, written: subtractionPicture(52364, 7138, 0) },
+    { say: 'Ones: 4 is less than 8, so exchange one ten for ten ones. Cross out the 6 and write 5 above it. Put a small 1 by the 4 to make 14. Then 14 take away 8 is 6.', written: subtractionPicture(52364, 7138, 1) },
+    { say: 'Tens: there are 5 tens now. 5 take away 3 is 2.', written: subtractionPicture(52364, 7138, 2) },
+    { say: 'Hundreds: 3 take away 1 is 2.', written: subtractionPicture(52364, 7138, 3) },
+    { say: 'Thousands: 2 is less than 7, so exchange again. Cross out the 5 and write 4. Now it is 12 take away 7, which is 5.', written: subtractionPicture(52364, 7138, 4) },
+    { say: 'Ten thousands: 4 take away nothing is 4. The answer is 45,226.', written: subtractionPicture(52364, 7138, 5) },
   ],
   generate(level, r) {
     if (level === 1) {

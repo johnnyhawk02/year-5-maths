@@ -8,6 +8,8 @@ import { DivisionGrid, divisionValue, emptyDivision } from '../inputs/DivisionGr
 import { FractionBars } from '../inputs/FractionBars';
 import { FractionInput, emptyFraction, fractionValue } from '../inputs/FractionInput';
 import { Rich } from '../inputs/Rich';
+import { WrittenPicture } from '../inputs/WrittenPicture';
+import { additionPicture, additionSteps, divisionPicture, divisionSteps, longMultiplicationPicture, LONG_MULTIPLICATION_STEPS, shortMultiplicationPicture, shortMultiplicationSteps, subtractionPicture, subtractionSteps, type Written } from '../engine/written';
 import { showFrac } from '../engine/fractions';
 import { NumberLine } from '../inputs/NumberLine';
 import { NumberPad, padValue } from '../inputs/NumberPad';
@@ -34,6 +36,20 @@ const rightAnswer = (q: Question): string => {
     case 'division': return fmt(q.answer) + (q.askRemainder ? ` remainder ${q.remainder}` : '');
     case 'fraction': return showFrac(q.answer);
   }
+};
+
+/** The finished working for a written calculation, drawn as it would look on paper. */
+const finishedWorking = (q: Question): Written | null => {
+  const plain = (w: Written): Written =>
+    w.kind === 'division'
+      ? { ...w, digits: w.digits.map((c) => ({ ...c, hi: false })), answer: w.answer.map((c) => ({ ...c, hi: false })) }
+      : { ...w, rows: w.rows.map((r) => (r === 'rule' ? r : { ...r, cells: r.cells.map((c) => ({ ...c, hi: false })) })) };
+  if (q.kind === 'division') return plain(divisionPicture(q.dividend, q.divisor, divisionSteps(q.dividend)));
+  if (q.kind !== 'column') return null;
+  if (q.op === '+') return plain(additionPicture(q.rows, additionSteps(q.rows)));
+  if (q.op === '-') return plain(subtractionPicture(q.rows[0], q.rows[1], subtractionSteps(q.rows[0])));
+  const [a, b] = q.rows;
+  return plain(b < 10 ? shortMultiplicationPicture(a, b, shortMultiplicationSteps(a, b)) : longMultiplicationPicture(a, b, LONG_MULTIPLICATION_STEPS));
 };
 
 export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRecorded: () => void }) {
@@ -96,6 +112,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
   const response: Response =
     q.kind === 'number' ? padValue(pad) : q.kind === 'column' ? columnValue(cells) : q.kind === 'division' ? divisionValue(division, q.askRemainder) : q.kind === 'fraction' ? fractionValue(fraction) : q.kind === 'choice' ? pick : q.kind === 'line' ? point : placed.length === q.items.length ? placed : null;
   const locked = checked !== null;
+  const worked = locked ? finishedWorking(q) : null;
 
   const check = () => {
     if (response === null) return;
@@ -158,6 +175,7 @@ export function Session({ id, mode, onRecorded }: { id: string; mode: Mode; onRe
                 {checked ? 'Correct' : 'Not quite'}
               </p>
               {!checked && <p>The answer is <strong><Rich text={rightAnswer(q)} /></strong>.</p>}
+              {worked && <WrittenPicture picture={worked} />}
               <ul class="working">
                 {q.explain.map((line, i) => <li key={i}><Rich text={line} /></li>)}
               </ul>

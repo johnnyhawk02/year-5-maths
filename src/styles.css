@@ -465,3 +465,28 @@ button { font: inherit; color: inherit; }
 .show.fact { font-size: 3rem; }
 .fact-list { display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 1.3rem; font-weight: 600; }
 .fact-list li { list-style: none; }
+
+/* Written methods drawn as they look on paper */
+.written {
+  display: inline-grid; align-self: flex-start; align-items: end; gap: 2px 0; padding: 14px 18px;
+  background: var(--page); border: 1px solid var(--line); border-radius: 12px;
+  font-size: 1.9rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.25;
+}
+.written.w-exchange { row-gap: 0.55em; }
+.w-cell { position: relative; display: block; text-align: center; min-height: 1.25em; }
+.w-cell.hi { color: var(--spot2); }
+.w-op { text-align: left; }
+.w-rule { height: 3px; background: var(--ink); border-radius: 2px; margin: 2px 0; }
+.w-small { font-size: 0.55em; }
+.w-small .w-cell { min-height: 1.1em; }
+.w-struck { text-decoration: line-through; text-decoration-thickness: 2px; }
+.w-above { position: absolute; left: 0; right: 0; bottom: 92%; font-size: 0.5em; line-height: 1; }
+.w-pre { position: absolute; right: 68%; top: 0; font-size: 0.5em; line-height: 1.2; }
+.w-division { gap: 0; }
+.w-division .w-cell { padding: 0 0.1em; }
+.w-under { border-top: 3px solid var(--ink); padding-top: 4px; margin-top: 2px; }
+.w-under.first { border-left: 3px solid var(--ink); border-top-left-radius: 2px; }
+.w-under .w-pre { right: 66%; top: 0.1em; }
+.w-divisor { padding-top: 6px; padding-right: 0.25em; text-align: right; }
+.w-rem { padding-left: 0.5em; white-space: nowrap; }
+.feedback .written { font-size: 1.5rem; }
