@@ -294,3 +294,98 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* Lessons */
+.crumb { color: var(--ink); text-underline-offset: 4px; }
+.skill.ready { color: var(--ink); text-decoration: none; }
+.skill.ready .soon { color: var(--spot1); font-weight: 600; font-size: 0.9rem; }
+.skills li:last-child .skill { border-bottom: 0; }
+.steps-list, .example { display: flex; flex-direction: column; gap: 12px; }
+.step-card { flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; }
+.step-card .btn { min-width: 132px; flex: none; }
+.show { font-size: 1.6rem; font-weight: 600; letter-spacing: 0.01em; overflow-wrap: anywhere; }
+.hint-text { color: var(--faint); font-size: 0.9rem; }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn.wide { min-width: 200px; }
+.row.end { justify-content: flex-end; }
+.mark.big { font-size: 1.25rem; }
+
+/* Question screen */
+.session { display: flex; flex-direction: column; gap: 24px; }
+.session-top { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; }
+.session-top .crumb { min-height: 44px; display: inline-flex; align-items: center; }
+.count { color: var(--faint); min-width: 3.5em; text-align: right; }
+.q-layout { display: grid; grid-template-columns: 1fr; gap: 24px; }
+.q-side, .a-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.prompt { font-size: 1.35rem; font-weight: 600; text-wrap: pretty; }
+.q-side .show { font-size: 2rem; }
+.hint-btn { align-self: flex-start; padding: 0; }
+.hint-card { padding: 14px 18px; }
+
+.feedback { gap: 10px; border-width: 2px; }
+.feedback.right { border-color: var(--spot2); }
+.feedback.wrong { border-color: var(--ink); }
+.verdict {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: inline-grid; place-items: center; font-size: 1.1rem; font-weight: 700;
+}
+.verdict.yes { background: var(--spot2); color: var(--on-spot); }
+.verdict.no { border: 2px solid var(--ink); }
+.working { display: flex; flex-direction: column; gap: 6px; }
+.working li { padding-left: 14px; border-left: 2px solid var(--line); }
+
+.pad-wrap { display: flex; flex-direction: column; gap: 12px; max-width: 420px; width: 100%; align-self: center; }
+.answer-box {
+  min-height: 72px; padding: 0 18px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+  background: var(--panel); border: 2px solid var(--spot1); border-radius: 12px;
+  font-size: 2rem; font-weight: 600;
+}
+.answer-box .suffix { font-size: 1.4rem; color: var(--faint); }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.key {
+  min-height: 68px; font-size: 1.6rem; font-weight: 600;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
+  touch-action: manipulation;
+}
+.key:active:not(:disabled) { background: var(--ink); color: var(--page); }
+.key:disabled { opacity: 0.4; }
+
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choice {
+  min-height: 84px; padding: 8px 14px; font-size: 1.4rem; font-weight: 600;
+  background: var(--panel); border: 2px solid var(--line); border-radius: 12px; cursor: pointer; overflow-wrap: anywhere;
+}
+.choice[aria-checked='true'] { border-color: var(--spot1); box-shadow: inset 0 0 0 2px var(--spot1); }
+
+.order { display: flex; flex-direction: column; gap: 14px; }
+.slots, .tray { display: flex; flex-wrap: wrap; gap: 8px; min-height: 64px; align-items: center; }
+.slot {
+  min-width: 108px; min-height: 60px; flex: 1;
+  display: grid; place-items: center; color: var(--faint);
+  border: 2px dashed var(--line); border-radius: 12px;
+}
+.card-btn {
+  min-width: 108px; min-height: 60px; flex: 1; padding: 0 10px; font-size: 1.2rem; font-weight: 600;
+  background: var(--panel); border: 2px solid var(--ink); border-radius: 12px; cursor: pointer;
+}
+.card-btn.placed { border-color: var(--spot1); }
+
+.line { width: 100%; height: auto; touch-action: none; cursor: pointer; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+.line-axis { stroke: var(--ink); stroke-width: 2.5; }
+.line-label { fill: var(--ink); font-size: 26px; text-anchor: middle; font-weight: 600; }
+.line-marker { fill: var(--spot1); }
+.line-reveal { fill: none; stroke: var(--spot2); stroke-width: 5; }
+
+@media (min-width: 900px) and (orientation: landscape) {
+  .q-layout { grid-template-columns: 1fr 420px; align-items: start; }
+}
+@media (max-width: 560px) {
+  .step-card { flex-direction: column; align-items: stretch; }
+  .choices { grid-template-columns: 1fr; }
+  .btn.wide { width: 100%; }
+}
+/* The number line needs the full width so each tick is easy to tap. */
+@media (min-width: 900px) and (orientation: landscape) {
+  .q-layout.one-col { grid-template-columns: 1fr; }
+}
