@@ -13,6 +13,8 @@ interface Base {
   explain: string[];
   /** Optional fraction bars drawn under the prompt. */
   bars?: Bar[];
+  /** Optional pictures drawn under the prompt, such as a shape to measure. */
+  pics?: Picture[];
 }
 
 /** A bar cut into equal parts with some shaded. More shaded than parts draws extra bars. */
@@ -28,6 +30,8 @@ export interface NumberQuestion extends Base {
   /** Adds a decimal point key to the number pad. */
   decimal?: boolean;
   unit?: string;
+  /** An amount in pounds: shows a pound sign and the answer with two decimal places. */
+  money?: boolean;
 }
 
 export interface ChoiceQuestion extends Base {

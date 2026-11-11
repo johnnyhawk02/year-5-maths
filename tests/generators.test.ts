@@ -6,6 +6,7 @@ import { UNITS } from '../src/curriculum';
 import { additionWorking, subtractionWorking } from '../src/skills/add-subtract';
 import { divisionWorking, factorsOf, isPrime, shortMultiplicationWorking } from '../src/skills/multiply-divide';
 import { ALL_CONTENT } from '../src/skills';
+import { METRIC, TIME_UNITS, clockText } from '../src/skills/measurement';
 import { additionPicture, additionSteps, divisionPicture, divisionSteps, longMultiplicationPicture, shortMultiplicationPicture, shortMultiplicationSteps, subtractionPicture, subtractionSteps, type WRow, type Written } from '../src/engine/written';
 import { MIXED, ROUND_SIZE, TABLES, clock, isTableKey, makeRound } from '../src/tables';
 
@@ -941,5 +942,134 @@ describe('worked examples are shown, not just told', () => {
       if (p.kind === 'array') expect(p.rows * p.cols * (p.copies ?? 1)).toBeLessThanOrEqual(100);
       if (p.kind === 'grid') { expect(p.shaded).toBeGreaterThanOrEqual(0); expect(p.shaded).toBeLessThanOrEqual(100); }
     }
+  });
+});
+
+describe('unit 6 answers are right', () => {
+  const each = (id: string, fn: (q: Question) => void) => {
+    const c = ALL_CONTENT.find((x) => x.id === id)!;
+    for (const level of [1, 2, 3] as Level[]) for (let seed = 1; seed <= 3000; seed++) fn(c.generate(level, makeRng(seed)));
+  };
+  const close = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThan(1e-9);
+  const numbers = (s: string) => [...s.replace(/(\d),(\d)/g, '$1$2').matchAll(/\d+(?:\.\d+)?/g)].map((m) => Number(m[0]));
+  const asNumber = (q: Question) => { if (q.kind !== 'number') throw new Error('expected a number question'); return q; };
+  // How many of the smallest unit of its kind each unit is worth.
+  const WORTH: Record<string, number> = { km: 1_000_000, m: 1000, cm: 10, mm: 1, kg: 1000, g: 1, litres: 1000, ml: 1 };
+  const amount = (text: string) => { const m = text.replace(/,/g, '').match(/([\d.]+|\?) (\w+)/)!; return { n: m[1], worth: WORTH[m[2]], unit: m[2] }; };
+  // Perimeter and area of a drawn shape, from its corners.
+  const edge = (pts: [number, number][]) => pts.reduce((a, p, i) => { const q = pts[(i + 1) % pts.length]; return a + Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]); }, 0);
+  const shoelace = (pts: [number, number][]) => Math.abs(pts.reduce((a, p, i) => { const q = pts[(i + 1) % pts.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
+  const shapeOf = (q: Question) => { const p = q.pics?.[0]; if (p?.kind !== 'shape') throw new Error('expected a shape'); return p; };
+  const sideLabels = (q: Question) => shapeOf(q).labels.map((l) => l.text).filter((t) => t !== '?').map((t) => Number(t.split(' ')[0]));
+
+  it('metric units', () => {
+    expect(METRIC.length).toBe(5);
+    each('measurement-1', (q) => {
+      if (q.kind === 'choice') {
+        const worth = q.options.map((o) => { const a = amount(o); return Number(a.n) * a.worth; });
+        expect(worth[0]).not.toBe(worth[1]);
+        const more = /longer|heavier|more/.test(q.prompt);
+        close(worth[q.answer], more ? Math.max(...worth) : Math.min(...worth));
+        return;
+      }
+      const n = asNumber(q);
+      const [left, right] = n.show!.split(' = ');
+      const target = amount(right);
+      expect(target.unit).toBe(n.unit);
+      const total = left.split(' + ').map(amount).reduce((a, x) => a + Number(x.n) * x.worth, 0);
+      close(n.answer, total / target.worth);
+    });
+  });
+
+  it('imperial units', () => {
+    each('measurement-2', (q) => {
+      if (q.kind === 'choice') { expect(q.options.length).toBe(4); return; }
+      const n = asNumber(q);
+      const [, rate, count] = numbers(n.prompt);
+      // The fact gives "1 X is about R Y". Going to Y multiplies, going back divides.
+      const toSecond = n.prompt.split('about')[1].includes(` ${n.unit}.`);
+      close(n.answer, toSecond ? count * rate : count / rate);
+      expect(n.answer).toBeGreaterThan(0);
+    });
+  });
+
+  it('perimeter', () => {
+    each('measurement-3', (q) => {
+      const n = asNumber(q);
+      const shape = shapeOf(q);
+      if (shape.points.length === 6) {
+        expect(n.answer).toBe(edge(shape.points));
+        // Every side that is labelled with a number matches the drawing.
+        const lengths = shape.points.map((p, i) => { const s = shape.points[(i + 1) % 6]; return Math.abs(p[0] - s[0]) + Math.abs(p[1] - s[1]); });
+        sideLabels(q).forEach((v) => expect(lengths).toContain(v));
+      } else if (n.prompt.includes('question mark')) {
+        const p = numbers(n.prompt)[0];
+        expect(2 * (sideLabels(q)[0] + n.answer)).toBe(p);
+      } else {
+        const [w, h] = sideLabels(q);
+        expect(n.answer).toBe(2 * (w + h));
+      }
+    });
+  });
+
+  it('area', () => {
+    each('measurement-4', (q) => {
+      const n = asNumber(q);
+      const shape = shapeOf(q);
+      if (shape.points.length === 6) expect(n.answer).toBe(shoelace(shape.points));
+      else if (n.prompt.includes('question mark')) expect(n.answer * sideLabels(q)[0]).toBe(numbers(n.prompt.replace('cm²', ''))[0]);
+      else {
+        const [w, h] = sideLabels(q);
+        expect(n.answer).toBe(w * h);
+        if (shape.squares) expect(shoelace(shape.points)).toBe(n.answer); // drawn to scale so the squares can be counted
+      }
+    });
+  });
+
+  it('volume and capacity', () => {
+    each('measurement-5', (q) => {
+      const n = asNumber(q);
+      const p = q.pics?.[0];
+      if (p?.kind === 'cubes') return expect(n.answer).toBe(p.wide * p.deep * p.high);
+      const v = numbers(n.prompt);
+      if (n.prompt.includes('jug')) close(n.answer, (v[0] * 1000) / v[1]);
+      else close(n.answer, v[0] * 1000 - v[1] * v[2]);
+      expect(Number.isInteger(n.answer) && n.answer > 0).toBe(true);
+    });
+  });
+
+  it('time', () => {
+    const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3));
+    each('measurement-6', (q) => {
+      const times = [...q.prompt.matchAll(/\d\d:\d\d/g)].map((m) => minutes(m[0]));
+      if (q.kind === 'choice') {
+        const [h, m] = numbers(q.prompt.split('takes')[1]);
+        expect(q.options[q.answer]).toBe(clockText(times[0] + h * 60 + m));
+        expect(q.options.length).toBe(4);
+        return;
+      }
+      const n = asNumber(q);
+      if (times.length === 2) expect(n.answer).toBe(times[1] - times[0]);
+      else if (n.show) { const [total, h] = numbers(n.show); expect(n.answer).toBe(total - h * 60); expect(n.answer).toBeLessThan(60); }
+      else if (n.prompt.startsWith('How many minutes is')) { const [h, m] = numbers(n.prompt); expect(n.answer).toBe(h * 60 + m); }
+      else {
+        const unit = TIME_UNITS.find((u) => n.prompt.includes(`How many ${u[2]}`) && n.prompt.includes(u[1]))!;
+        expect(n.answer).toBe(numbers(n.prompt)[0] * unit[3]);
+      }
+    });
+  });
+
+  it('measure and money problems', () => {
+    each('measurement-7', (q) => {
+      const n = asNumber(q);
+      const v = numbers(n.prompt);
+      if (n.prompt.includes('change')) close(n.answer, v[2] - v[0] * v[1]);
+      else if (n.money) close(n.answer, v[0] * v[1]);
+      else if (n.prompt.includes('bags weigh')) close(n.answer, v[0] * 1000 * v[1]);
+      else if (n.prompt.includes('ribbon')) close(n.answer, (v[0] * 100) / v[1]);
+      else close(n.answer, v[0] * 1000 - v[1] * v[2]);
+      expect(n.answer).toBeGreaterThan(0);
+      if (n.money) { expect(n.decimal).toBe(true); expect(n.explain.at(-1)).toContain(`£${n.answer.toFixed(2)}`); }
+    });
   });
 });
