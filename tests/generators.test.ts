@@ -3,6 +3,7 @@ import { fmt, roundTo, toRoman, toWords } from '../src/engine/format';
 import { makeRng } from '../src/engine/rng';
 import { isCorrect, type Level, type Question } from '../src/engine/types';
 import { UNITS } from '../src/curriculum';
+import { additionWorking, subtractionWorking } from '../src/skills/add-subtract';
 import { ALL_CONTENT } from '../src/skills';
 
 const parse = (s: string) => Number(s.replace(/,/g, '').replace('−', '-').replace('°C', ''));
@@ -26,6 +27,15 @@ function checkShape(q: Question) {
       expect(isCorrect(q, q.answer)).toBe(true);
       expect(isCorrect(q, q.answer + 1)).toBe(false);
       break;
+    case 'column': {
+      const total = q.op === '+' ? q.rows.reduce((a, b) => a + b, 0) : q.rows[0] - q.rows[1];
+      expect(q.answer).toBe(total);
+      expect(q.answer).toBeGreaterThanOrEqual(0);
+      expect(q.answer).toBeLessThan(1_000_000);
+      if (q.op === '-') expect(q.rows.length).toBe(2);
+      expect(q.explain[q.explain.length - 1]).toBe(`Answer: ${fmt(q.answer)}.`);
+      break;
+    }
     case 'choice':
       expect(q.options.length).toBeGreaterThanOrEqual(2);
       expect(new Set(q.options).size).toBe(q.options.length);
@@ -77,10 +87,10 @@ describe('helpers', () => {
 });
 
 describe('skill content', () => {
-  it('exists for every skill in unit 1 and nowhere unknown', () => {
+  it('exists for every skill in units 1 and 2 and nowhere unknown', () => {
     const known = new Set(UNITS.flatMap((u) => u.skills.map((s) => s.id)));
     for (const c of ALL_CONTENT) expect(known.has(c.id)).toBe(true);
-    for (const s of UNITS[0].skills) expect(ALL_CONTENT.some((c) => c.id === s.id)).toBe(true);
+    for (const u of UNITS.slice(0, 2)) for (const s of u.skills) expect(ALL_CONTENT.some((c) => c.id === s.id)).toBe(true);
   });
 
   for (const content of ALL_CONTENT) {
@@ -211,6 +221,97 @@ describe('answers are right', () => {
           expect(q.answer).toBe(t[2] + (t[2] - t[1]));
           expect(q.answer).toBeLessThan(0);
         } else throw new Error('unrecognised question: ' + q.prompt);
+      });
+    }
+  });
+});
+
+describe('unit 2 answers are right', () => {
+  const each = (id: string, level: Level, fn: (q: Question) => void) => {
+    const c = ALL_CONTENT.find((x) => x.id === id)!;
+    for (let seed = 1; seed <= 3000; seed++) fn(c.generate(level, makeRng(seed)));
+  };
+  const PLACE_NAMES = ['Ones', 'Tens', 'Hundreds', 'Thousands', 'Ten thousands', 'Hundred thousands', 'Millions'];
+  const nums = (s: string) => [...s.matchAll(/\d[\d,]*/g)].map((m) => parse(m[0]));
+
+  // Rebuild the answer from the digit each line of working arrives at.
+  const digitsFromWorking = (lines: string[], fallback: number) => {
+    const out = String(fallback).split('').reverse().map(Number);
+    for (const line of lines) {
+      const place = PLACE_NAMES.findIndex((p) => line.startsWith(p + ':'));
+      if (place === -1) continue;
+      const result = Number(line.match(/= (\d+)\./)![1]);
+      out[place] = result % 10;
+    }
+    return Number(out.reverse().join(''));
+  };
+
+  it('written working matches the real sum', () => {
+    expect(additionWorking([46275, 8163]).at(-1)).toBe('Answer: 54,438.');
+    expect(subtractionWorking(52364, 7138).at(-1)).toBe('Answer: 45,226.');
+    const r = makeRng(7);
+    for (let i = 0; i < 5000; i++) {
+      const a = r.int(1000, 499999), b = r.int(1000, 499999);
+      expect(digitsFromWorking(additionWorking([a, b]), a + b)).toBe(a + b);
+      const [hi, lo] = a >= b ? [a, b] : [b, a];
+      // Start from the top number: every column the working skips must be an unchanged copy of it.
+      expect(digitsFromWorking(subtractionWorking(hi, lo), hi) % 10 ** String(hi).length).toBe(hi - lo);
+    }
+    for (const [a, b] of [[40003, 17568], [500200, 1111], [70010, 69999], [100000, 99999], [90000, 1234]]) {
+      expect(digitsFromWorking(subtractionWorking(a, b), a)).toBe(a - b);
+    }
+  });
+
+  it('mental methods', () => {
+    for (const level of [1, 2, 3] as Level[]) {
+      each('add-subtract-3', level, (q) => {
+        if (q.kind !== 'number') throw new Error('unexpected kind');
+        const n = nums(q.prompt);
+        if (q.prompt.startsWith('What must be added')) expect(n[0] + q.answer).toBe(n[1]);
+        else expect(q.answer).toBe(q.prompt.includes('+') ? n[0] + n[1] : n[0] - n[1]);
+        expect(q.answer).toBeGreaterThan(0);
+        expect(q.explain.at(-1)).toContain(fmt(q.answer));
+      });
+    }
+  });
+
+  it('estimating', () => {
+    for (const level of [1, 2, 3] as Level[]) {
+      each('add-subtract-4', level, (q) => {
+        const n = nums(q.prompt);
+        const add = q.prompt.includes('+');
+        const real = add ? n[0] + n[1] : n[0] - n[1];
+        expect(real).toBeGreaterThan(0);
+        if (q.kind === 'number') {
+          const p = n[2];
+          expect(q.answer).toBe(add ? roundTo(n[0], p) + roundTo(n[1], p) : roundTo(n[0], p) - roundTo(n[1], p));
+          expect(q.answer).toBeGreaterThan(0);
+        } else if (q.kind === 'choice' && q.prompt.startsWith('Which is the best')) {
+          const gaps = q.options.map((o) => Math.abs(parse(o) - real));
+          expect(gaps.indexOf(Math.min(...gaps))).toBe(q.answer);
+        } else if (q.kind === 'choice') {
+          const claimed = n[2];
+          expect(q.answer).toBe(claimed === real ? 0 : claimed > real ? 1 : 2);
+          if (claimed !== real) expect(Math.abs(claimed - real)).toBeGreaterThanOrEqual(20000);
+        }
+      });
+    }
+  });
+
+  it('problems end on the stated answer', () => {
+    for (const level of [1, 2, 3] as Level[]) {
+      each('add-subtract-5', level, (q) => {
+        if (q.kind !== 'number') throw new Error('unexpected kind');
+        expect(q.answer).toBeGreaterThan(0);
+        expect(q.explain.at(-1)).toContain(fmt(q.answer));
+        if (q.show) {
+          const n = nums(q.show);
+          expect(n[0] + q.answer).toBe(n[1]);
+        }
+        if (q.prompt.startsWith('Two numbers add up')) {
+          const n = nums(q.prompt);
+          expect(q.answer + q.answer + n[1]).toBe(n[0]);
+        }
       });
     }
   });
