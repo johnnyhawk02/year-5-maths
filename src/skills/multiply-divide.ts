@@ -1,5 +1,5 @@
 // Unit 3: Multiplication and division. All wording and questions are our own.
-import { barModel, dotArray, numberLine, placeChart } from '../engine/pictures';
+import { barModel, cubes, dotArray, numberLine, placeChart } from '../engine/pictures';
 import { divisionPicture, longMultiplicationPicture, shortMultiplicationPicture } from '../engine/written';
 import { fmt } from '../engine/format';
 import type { Rng } from '../engine/rng';
@@ -252,7 +252,7 @@ const num = (prompt: string, answer: number, explain: string[], show?: string): 
 function squaresAndCubes(r: Rng, level: number): Question {
   if (level === 1) {
     const n = r.int(2, 12);
-    return num('Work out this square number.', n * n, [`${n}${SQ} means ${n} ${X} ${n}.`, `${n} ${X} ${n} = ${n * n}.`], `${n}${SQ}`);
+    return { ...num('Work out this square number.', n * n, [`${n}${SQ} means ${n} ${X} ${n}.`, `${n} ${X} ${n} = ${n * n}.`], `${n}${SQ}`), pics: n <= 10 ? [dotArray(n, n, `${n} rows of ${n}`)] : undefined };
   }
   if (level === 2) {
     return r.pick([
@@ -286,7 +286,7 @@ function squaresAndCubes(r: Rng, level: number): Question {
     },
     () => {
       const n = r.int(2, 5);
-      return num(`A solid cube is built from 1 cm cubes. Each edge is ${n} cm long. How many 1 cm cubes are in it?`, n ** 3, [`Each layer has ${n} ${X} ${n} = ${n * n} cubes.`, `There are ${n} layers: ${n * n} ${X} ${n} = ${n ** 3}.`]);
+      return { ...num(`A solid cube is built from 1 cm cubes. Each edge is ${n} cm long. How many 1 cm cubes are in it?`, n ** 3, [`Each layer has ${n} ${X} ${n} = ${n * n} cubes.`, `There are ${n} layers: ${n * n} ${X} ${n} = ${n ** 3}.`]), pics: [cubes(n, n, n)] };
     },
   ])();
 }

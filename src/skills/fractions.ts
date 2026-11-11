@@ -238,7 +238,7 @@ function mixedToImproper(r: Rng): Question {
     `Each whole one is ${d} ${d === 2 ? 'halves' : 'parts'}: ${w} ${X} ${d} = ${w * d}.`,
     `Add the ${n} extra: ${w * d} + ${n} = ${w * d + n}.`,
     `${mx(w, n, d)} = ${fr(w * d + n, d)}.`,
-  ]);
+  ], d <= 6 && w <= 3 ? { bars: [{ parts: d, shaded: w * d + n }] } : {});
 }
 
 function sumPastOne(r: Rng): Question {
@@ -250,7 +250,7 @@ function sumPastOne(r: Rng): Question {
       `Add the numerators: ${a} + ${b} = ${a + b}. So the total is ${fr(a + b, d)}.`,
       `${a + b} ${DIV} ${d} = ${m.whole} remainder ${m.num}.`,
       `${fr(a + b, d)} = ${showFrac(m)}.`,
-    ]);
+    ], { bars: [{ parts: d, shaded: a }, { parts: d, shaded: b }] });
   }
 }
 
@@ -298,7 +298,7 @@ function sameDenominator(r: Rng): Question {
     'The denominators are the same, so the size of the parts does not change.',
     `${add ? 'Add' : 'Subtract'} the numerators: ${a} ${add ? '+' : MINUS} ${b} = ${n}.`,
     `The answer is ${fr(n, d)}.`,
-  ]);
+  ], { bars: [{ parts: d, shaded: a }, { parts: d, shaded: b }] });
 }
 
 function relatedDenominators(r: Rng, pastOne: boolean): Question {
