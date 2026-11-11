@@ -9,7 +9,15 @@ interface Base {
   show?: string;
   /** The worked solution, one short step per line. */
   explain: string[];
+  /** Optional fraction bars drawn under the prompt. */
+  bars?: Bar[];
 }
+
+/** A bar cut into equal parts with some shaded. More shaded than parts draws extra bars. */
+export interface Bar { parts: number; shaded: number }
+
+/** A fraction or mixed number. `whole` is 0 for a plain fraction. */
+export interface Frac { whole: number; num: number; den: number }
 
 export interface NumberQuestion extends Base {
   kind: 'number';
@@ -69,13 +77,27 @@ export interface DivisionQuestion extends Base {
   askRemainder: boolean;
 }
 
-export type Question = NumberQuestion | ChoiceQuestion | OrderQuestion | LineQuestion | ColumnQuestion | DivisionQuestion;
+/** Answered by typing a numerator and denominator, with a whole-number box for mixed numbers. */
+export interface FractionQuestion extends Base {
+  kind: 'fraction';
+  answer: Frac;
+  /** Show the whole-number box and insist on a proper fraction part. */
+  mixed: boolean;
+  /** Only the simplest form is accepted. Otherwise any equivalent fraction is. */
+  simplest?: boolean;
+}
+
+export type Question =
+  | NumberQuestion | ChoiceQuestion | OrderQuestion | LineQuestion | ColumnQuestion | DivisionQuestion | FractionQuestion;
 export interface DivisionResponse { quotient: number; remainder: number }
-export type Response = number | string[] | DivisionResponse | null;
+export type Response = number | string[] | DivisionResponse | Frac | null;
+
+const hcf = (a: number, b: number): number => (b ? hcf(b, a % b) : a);
 
 export interface Step {
   say: string;
   show?: string;
+  bars?: Bar[];
 }
 
 export interface SkillContent {
@@ -97,8 +119,18 @@ export function isCorrect(q: Question, r: Response): boolean {
       return typeof r === 'number' && r === q.answer;
     case 'division':
       return (
-        typeof r === 'object' && !Array.isArray(r) && r.quotient === q.answer && (!q.askRemainder || r.remainder === q.remainder)
+        typeof r === 'object' && !Array.isArray(r) && 'quotient' in r && r.quotient === q.answer && (!q.askRemainder || r.remainder === q.remainder)
       );
+    case 'fraction': {
+      if (typeof r !== 'object' || Array.isArray(r) || !('den' in r) || r.den <= 0) return false;
+      const a = q.answer;
+      // Same value, compared by cross-multiplying so no rounding is involved.
+      const same = (r.whole * r.den + r.num) * a.den === (a.whole * a.den + a.num) * r.den;
+      if (!same) return false;
+      if (q.mixed && r.num >= r.den) return false;
+      if (q.simplest && hcf(r.num, r.den) !== 1) return false;
+      return true;
+    }
     case 'order':
       return Array.isArray(r) && r.length === q.answer.length && r.every((v, i) => v === q.answer[i]);
   }

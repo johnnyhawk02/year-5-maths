@@ -1,3 +1,5 @@
+import { Rich } from './Rich';
+
 interface Props {
   items: string[];
   value: string[]; // the cards placed so far, in order
@@ -14,7 +16,7 @@ export function Order({ items, value, onChange, disabled }: Props) {
         {items.map((_, i) =>
           value[i] !== undefined ? (
             <button key={i} type="button" class="card-btn placed" disabled={disabled} onClick={() => onChange(value.filter((v) => v !== value[i]))}>
-              {value[i]}
+              <Rich text={value[i]} />
             </button>
           ) : (
             <span key={i} class="slot" aria-hidden="true">{i + 1}</span>
@@ -24,7 +26,7 @@ export function Order({ items, value, onChange, disabled }: Props) {
       <div class="tray" aria-label="Cards to place">
         {left.map((item) => (
           <button key={item} type="button" class="card-btn" disabled={disabled} onClick={() => onChange([...value, item])}>
-            {item}
+            <Rich text={item} />
           </button>
         ))}
         {!left.length && <span class="hint-text">Tap a card above to move it back.</span>}

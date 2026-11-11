@@ -7,7 +7,12 @@ import { additionWorking, subtractionWorking } from '../src/skills/add-subtract'
 import { divisionWorking, factorsOf, isPrime, shortMultiplicationWorking } from '../src/skills/multiply-divide';
 import { ALL_CONTENT } from '../src/skills';
 
-const parse = (s: string) => Number(s.replace(/,/g, '').replace('−', '-').replace('°C', ''));
+const parse = (s: string): number => {
+  // Fractions are written {3/4} or {2 3/4}.
+  const f = s.match(/^\{(?:(\d+) )?(\d+)\/(\d+)\}$/);
+  if (f) return Number(f[1] ?? 0) + Number(f[2]) / Number(f[3]);
+  return Number(s.replace(/,/g, '').replace('−', '-').replace('°C', ''));
+};
 
 const fromRoman = (s: string) => {
   const v: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
@@ -38,6 +43,21 @@ function checkShape(q: Question) {
       expect(q.answer).toBeLessThan(1_000_000);
       if (q.op === '-') expect(q.rows.length).toBe(2);
       expect(q.explain[q.explain.length - 1]).toBe(`Answer: ${fmt(q.answer)}.`);
+      break;
+    }
+    case 'fraction': {
+      const a = q.answer;
+      expect(a.den).toBeGreaterThan(1);
+      expect(a.num).toBeGreaterThan(0);
+      for (const v of [a.whole, a.num, a.den]) expect(String(v).length).toBeLessThanOrEqual(3); // fits the boxes
+      if (q.mixed) { expect(a.num).toBeLessThan(a.den); expect(a.whole).toBeGreaterThan(0); } else expect(a.whole).toBe(0);
+      expect(isCorrect(q, a)).toBe(true);
+      expect(isCorrect(q, { ...a, num: a.num + 1 })).toBe(false);
+      expect(isCorrect(q, { ...a, den: 0 })).toBe(false);
+      // An equivalent fraction is accepted unless the simplest form was asked for.
+      expect(isCorrect(q, { whole: a.whole, num: a.num * 2, den: a.den * 2 })).toBe(!q.simplest);
+      // A mixed-number answer must not be given as an improper fraction.
+      if (q.mixed) expect(isCorrect(q, { whole: 0, num: a.whole * a.den + a.num, den: a.den })).toBe(false);
       break;
     }
     case 'division':
@@ -102,10 +122,10 @@ describe('helpers', () => {
 });
 
 describe('skill content', () => {
-  it('exists for every skill in units 1 to 3 and nowhere unknown', () => {
+  it('exists for every skill in units 1 to 4 and nowhere unknown', () => {
     const known = new Set(UNITS.flatMap((u) => u.skills.map((s) => s.id)));
     for (const c of ALL_CONTENT) expect(known.has(c.id)).toBe(true);
-    for (const u of UNITS.slice(0, 3)) for (const s of u.skills) expect(ALL_CONTENT.some((c) => c.id === s.id)).toBe(true);
+    for (const u of UNITS.slice(0, 4)) for (const s of u.skills) expect(ALL_CONTENT.some((c) => c.id === s.id)).toBe(true);
   });
 
   for (const content of ALL_CONTENT) {
@@ -473,6 +493,101 @@ describe('unit 3 answers are right', () => {
         // Every line of working that is a sum must be true.
         for (const line of q.explain) {
           for (const m of line.matchAll(/([\d,]+(?:\u00b2)?(?: [+\u2212\u00d7\u00f7] [\d,]+)+) = ([\d,]+)/g)) close(value(m[1]), parse(m[2]));
+        }
+      });
+    }
+  });
+});
+
+describe('unit 4 answers are right', () => {
+  const each = (id: string, fn: (q: Question) => void) => {
+    const c = ALL_CONTENT.find((x) => x.id === id)!;
+    for (const level of [1, 2, 3] as Level[]) for (let seed = 1; seed <= 3000; seed++) fn(c.generate(level, makeRng(seed)));
+  };
+  const close = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThan(1e-9);
+  // Works out text such as "{1/4} + {3/8}" or "{2 1/3} × 4", with ? replaced by the answer.
+  const value = (expr: string, missing?: number) =>
+    Function(
+      `return (${expr
+        .replace(/\?/g, String(missing))
+        .replace(/\{(\d+) (\d+)\/(\d+)\}/g, '($1+$2/$3)')
+        .replace(/\{(\d+)\/(\d+)\}/g, '($1/$2)')
+        .replace(/×/g, '*')
+        .replace(/−/g, '-')})`,
+    )() as number;
+  const fracs = (s: string) => [...s.matchAll(/\{(?:\d+ )?\d+\/\d+\}/g)].map((m) => m[0]);
+  const answerValue = (q: Question) => {
+    if (q.kind !== 'fraction') throw new Error('expected a fraction answer');
+    return q.answer.whole + q.answer.num / q.answer.den;
+  };
+  const hcf = (a: number, b: number): number => (b ? hcf(b, a % b) : a);
+
+  it('comparing and ordering', () => {
+    each('fractions-1', (q) => {
+      if (q.kind === 'order') return; // order is checked by value in the shape test
+      if (q.kind !== 'choice') throw new Error('unexpected kind');
+      if (q.show) {
+        const [a, b] = fracs(q.show).map(parse);
+        expect(q.options[q.answer]).toBe(Math.abs(a - b) < 1e-9 ? '=' : a < b ? '<' : '>');
+      } else {
+        const [a, b] = q.options.map(parse);
+        expect(Math.abs(a - b)).toBeGreaterThan(1e-9);
+        close(parse(q.options[q.answer]), q.prompt.includes('larger') ? Math.max(a, b) : Math.min(a, b));
+        if (q.bars) q.bars.forEach((bar) => expect(q.options.some((o) => Math.abs(parse(o) - bar.shaded / bar.parts) < 1e-9)).toBe(true));
+      }
+    });
+  });
+
+  it('equivalent fractions', () => {
+    each('fractions-2', (q) => {
+      if (q.kind === 'number') {
+        const [left, right] = q.show!.split('=');
+        close(value(left, q.answer), value(right, q.answer));
+        if (q.bars) close(q.bars[0].shaded / q.bars[0].parts, q.bars[1].shaded / q.bars[1].parts);
+      } else if (q.kind === 'fraction') {
+        expect(q.simplest).toBe(true);
+        expect(hcf(q.answer.num, q.answer.den)).toBe(1);
+        close(answerValue(q), parse(fracs(q.prompt)[0]));
+      } else if (q.kind === 'choice') {
+        const target = parse(fracs(q.prompt)[0]);
+        const same = q.options.map((o) => Math.abs(parse(o) - target) < 1e-9);
+        const wantSame = !q.prompt.includes('not equivalent');
+        expect(same.filter((v) => v === wantSame).length).toBe(1);
+        expect(same[q.answer]).toBe(wantSame);
+        expect(q.options.length).toBe(4);
+      } else throw new Error('unexpected kind');
+    });
+  });
+
+  it('mixed numbers and improper fractions', () => {
+    each('fractions-3', (q) => {
+      if (q.kind === 'fraction') {
+        close(answerValue(q), q.show ? value(q.show) : parse(fracs(q.prompt)[0]));
+        if (q.prompt.includes('improper')) expect(q.answer.num).toBeGreaterThan(q.answer.den);
+        if (q.bars) close(q.bars[0].shaded / q.bars[0].parts, answerValue(q));
+      } else if (q.kind === 'choice') {
+        const [a, b] = q.options.map(parse);
+        expect(Math.abs(a - b)).toBeGreaterThan(1e-9);
+        close(parse(q.options[q.answer]), q.prompt.includes('larger') ? Math.max(a, b) : Math.min(a, b));
+      } else throw new Error('unexpected kind');
+    });
+  });
+
+  it('adding, subtracting and multiplying', () => {
+    for (const id of ['fractions-4', 'fractions-5']) {
+      each(id, (q) => {
+        if (q.kind !== 'fraction') throw new Error('unexpected kind');
+        if (q.show) close(answerValue(q), value(q.show));
+        else {
+          const lots = Number(q.prompt.match(/needed for (\d+)/)![1]);
+          close(answerValue(q), parse(fracs(q.prompt)[0]) * lots);
+        }
+        expect(answerValue(q)).toBeGreaterThan(0);
+        expect(q.mixed).toBe(answerValue(q) > 1);
+        if (q.bars) close(q.bars[0].shaded / q.bars[0].parts, answerValue(q));
+        // Every "a = b" step in the working must hold.
+        for (const line of q.explain) {
+          for (const m of line.matchAll(/(\{[^}]+\}(?: [+−×] (?:\{[^}]+\}|\d+))?) = (\{[^}]+\})/g)) close(value(m[1]), value(m[2]));
         }
       });
     }
